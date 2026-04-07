@@ -1517,7 +1517,7 @@
           ${indirim > 0 ? `<div class="toplam-satir" style="color:#ef4444;font-size:12px;"><span>İndirim</span><span>-${indirim}₺</span></div>
           <div class="toplam-satir"><span class="toplam-label" style="font-weight:bold;">Net Toplam</span><span class="toplam-deger" style="color:#22c55e;">${Math.max(0,toplam-indirim)}₺</span></div>` : ''}
           
-          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Seçili Ürünleri Adisyona Ekle & Yazdır</button>` : ''}
+          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet</button>` : (JSON.stringify(masa.adisyon) !== JSON.stringify(window._seciliMasaYedekAdisyon || []) ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #e74c3c; border: 1px solid #c0392b; color: white; padding: 12px; font-size: 14px;" onclick="siparisiKaydet()">💾 Tablodan Silinenleri Onayla (Kaydet)</button>` : '')}
           
           <div class="butonlar">
             ${(!yoneticiModu && !garsonIzinler.odemeAl) ? '' : `<button class="btn btn-kapat" onclick="odemeAc()">Ödeme Al</button>`}
@@ -1626,7 +1626,7 @@
       }
     }
     
-    masalariKaydet();
+    // masalariKaydet();
     panelRender();
     bildirimGoster(`+ ${extraAd} Eklendi`, '#f97316');
   }
@@ -1693,6 +1693,14 @@
     } else {
       bildirimGoster('Masa güncellendi', '#27ae60');
     }
+  }
+
+  function siparisiKaydet() {
+    if (!seciliMasa) return;
+    window._seciliMasaYedekAdisyon = null;
+    masalariKaydet();
+    panelKapat();
+    bildirimGoster('Masa güncellendi, silinenler kaldırıldı', '#27ae60');
   }
 
   function adetArttir(i) {
@@ -2974,22 +2982,28 @@
       const r = await fetch(`${firebaseUrl}/menu.json`);
       if (r.ok) {
         const fbMenu = await r.json();
-        if (fbMenu) {
-           for (const kat in menu) {
-               if (fbMenu[kat]) {
-                   menu[kat].forEach(u => {
-                       const fbUrun = fbMenu[kat].find(fbu => fbu.ad === u.ad);
-                       // Eğer Firebase'de zaten bir yüklenmiş resim varsa, onu local hafızaya al
-                       if (fbUrun && fbUrun.resim) {
-                           u.resim = fbUrun.resim; 
-                       }
-                   });
+        if (fbMenu && Object.keys(fbMenu).length > 0) {
+           for (const kat in menu) { delete menu[kat]; }
+           for (const kat in fbMenu) { menu[kat] = fbMenu[kat]; }
+           
+           if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
+               hizliSayfaRender();
+           }
+           if (document.getElementById('menu-yonetim-modal') && document.getElementById('menu-yonetim-modal').classList.contains('aktif')) {
+               const aktifKatBtn = document.querySelector('.menu-kat-btn.aktif');
+               if (aktifKatBtn) {
+                   menuKatSec(aktifKatBtn.textContent);
+               } else {
+                   const ilkKat = Object.keys(menu)[0];
+                   if (ilkKat) menuKatSec(ilkKat);
                }
            }
+           if (typeof seciliMasa !== 'undefined' && seciliMasa) panelRender();
+           
+           return;
         }
       }
     } catch(e){}
-    // Tüm resimler kurtarıldıktan sonra master veriyi Firebase'e geri gönder
     menuFirebaseSync();
   }
 
@@ -3118,6 +3132,11 @@
 
       if (yeniJson === mevcutJson) { _sonOrtakMasalarDegisikligi = yeniJson; return; }
       if (yeniJson !== mevcutJson && yeniJson !== _sonOrtakMasalarDegisikligi) {
+        if (seciliMasa && data[seciliMasa]) {
+            data[seciliMasa].adisyon = Object.assign([], masalar[seciliMasa].adisyon);
+            data[seciliMasa].acilisZamani = masalar[seciliMasa].acilisZamani;
+            data[seciliMasa].isim = masalar[seciliMasa].isim;
+        }
         masalar = data;
         _sonOrtakMasalarDegisikligi = yeniJson;
         
