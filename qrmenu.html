@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dijital QR Menü</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      /* Orijinal tasarımdaki Koyu Yeşil Tonu */
+      --accent: #0f5132; 
+      --accent-glow: rgba(15, 81, 50, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 20px 20px 10px;
+      text-align: center;
+      background: #ffffff;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .brand-logo-container {
+      width: 140px;
+      margin: 0 auto 10px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .brand-logo-container img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #111;
+      margin-bottom: 2px;
+    }
+    
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
+
+    .category-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: none;
+    }
+    .category-scroll::-webkit-scrollbar { display: none; }
+
+    .cat-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cat-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      transform: scale(1.03);
+      box-shadow: 0 4px 10px rgba(15, 81, 50, 0.3);
+    }
+
+    .menu-container {
+      padding: 10px 15px 40px;
+      flex: 1;
+    }
+
+    .category-section {
+      margin-top: 25px;
+      scroll-margin-top: 190px;
+    }
+
+    .category-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: #1f2937;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .product-card {
+      background: var(--card-bg);
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .product-info {
+      flex: 1;
+      padding-right: 15px;
+    }
+
+    .product-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .product-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .product-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f5132;
+      background: #eef2f6;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #e1e7ef;
+      display: inline-block;
+      margin-top: 8px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 60px 20px;
+      color: #ef4444;
+      font-size: 14px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: auto;
+      background: #ffffff;
+      border-top: 1px solid #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand-logo-container" id="logo-container">
+      <img src="logo.png" alt="Logo" id="logo-img">
+    </div>
+    <div class="brand-name" id="brand-name">Yükleniyor...</div>
+    <div class="brand-subtitle">MENÜ</div>
+    <div class="category-scroll" id="cat-scroll">
+      <!-- Kategoriler -->
+    </div>
+  </div>
+
+  <div class="menu-container" id="menu-container">
+    <div class="loading">Menü ürünleri yükleniyor, lütfen bekleyin...</div>
+  </div>
+
+  <div class="footer">
+    <div style="font-weight:600; font-size:12px; color:#475569; letter-spacing:0.5px;">Powered by Volkan Kalaycı</div>
+    <div style="margin-top:4px; font-weight:700; color:#0f5132;">GRAB COFFEE CO.</div>
+  </div>
+
+  <script>
+    let firebaseUrl = "";
+    let menuData = null;
+    let extraData = null;
+    let extraGrupData = null;
+
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fbId = urlParams.get('f');
+      
+      if (!fbId) {
+        showError("QR Kod bağlantısı geçersiz.<br><br>Lütfen garson çağırınız veya masadaki doğru kodu okuttuğunuza emin olunuz.");
+        return;
+      }
+
+      // Proje ID'den veritabanı url'i oluştur
+      if (fbId.includes('firebaseio.com')) {
+        firebaseUrl = fbId.startsWith('http') ? fbId : `https://${fbId}`;
+      } else if (fbId.endsWith('-default-rtdb')) {
+        firebaseUrl = `https://${fbId}.firebaseio.com`;
+      } else {
+        firebaseUrl = `https://${fbId}-default-rtdb.firebaseio.com`;
+      }
+
+      try {
+        await Promise.all([
+          fetch(`${firebaseUrl}/menu.json`).then(r => r.json()).then(d => menuData = d),
+          fetch(`${firebaseUrl}/ekstraKategoriler.json`).then(r => r.json()).then(d => extraData = d),
+          fetch(`${firebaseUrl}/extraGruplari.json`).then(r => r.json()).then(d => extraGrupData = d),
+          fetch(`${firebaseUrl}/mekanIsim.json`).then(r => r.json()).then(d => {
+             if(d) {
+               document.getElementById('brand-name').textContent = d.toUpperCase();
+               document.title = d + " - Dijital Menü";
+             } else {
+               document.getElementById('brand-name').textContent = "GRAB COFFEE CO.";
+             }
+          }).catch(e => {
+             document.getElementById('brand-name').textContent = "GRAB COFFEE CO.";
+          })
+        ]);
+
+        if (!menuData || menuData.error) throw new Error("Menü verisi bulunamadı.");
+        renderMenu();
+
+      } catch (err) {
+        showError("Menüye ulaşılamadı. Sunucu bağlantısı yok veya işletme kapalı olabilir.");
+        console.error(err);
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('menu-container').innerHTML = `<div class="error-msg">⚠️ ${msg}</div>`;
+      document.getElementById('cat-scroll').innerHTML = '';
+      document.getElementById('brand-name').textContent = "Bağlantı Hatası";
+    }
+
+    function renderMenu() {
+      const catScroll = document.getElementById('cat-scroll');
+      const container = document.getElementById('menu-container');
+      
+      catScroll.innerHTML = '';
+      container.innerHTML = '';
+
+      // Kategorileri bul ve sırala
+      const siralama = [
+        'SICAK KAHVELER', 'SOĞUK KAHVELER', 'MATCHA', 'ÇAYLAR',
+        'SOĞUK İÇECEKLER', 'SICAK İÇECEKLER', 'TATLILAR', 'SANDVİÇLER', 'Ekstralar'
+      ];
+      const kategoriler = Object.keys(menuData).sort((a, b) => {
+        let i = siralama.indexOf(a); let j = siralama.indexOf(b);
+        if (i === -1) i = 999; if (j === -1) j = 999;
+        return i - j;
+      });
+
+      if (kategoriler.length === 0) {
+        container.innerHTML = `<div class="loading" style="animation:none">Şu an aktif menü bulunmuyor.</div>`;
+        return;
+      }
+
+      let isFirst = true;
+      const secObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting) {
+            const id = entry.target.id.replace('sec-', '');
+            document.querySelectorAll('.cat-btn').forEach(b => {
+              if (b.dataset.cat === id) {
+                b.classList.add('active');
+                b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              } else {
+                b.classList.remove('active');
+              }
+            });
+          }
+        });
+      }, { rootMargin: '-150px 0px -60% 0px' });
+
+      kategoriler.forEach(kat => {
+        const urlSafeKat = kat.replace(/[^a-zA-Z0-9]/g, '');
+        
+        // Kategori Butonu
+        const btn = document.createElement('div');
+        btn.className = `cat-btn ${isFirst ? 'active' : ''}`;
+        btn.dataset.cat = urlSafeKat;
+        
+        let ilkUrun = null;
+        if (menuData[kat]) {
+           const items = Object.values(menuData[kat]);
+           if (items.length > 0) ilkUrun = items[0];
+        }
+        
+        if (ilkUrun && ilkUrun.resim) {
+           btn.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('${ilkUrun.resim}')`;
+           btn.style.backgroundSize = "cover";
+           btn.style.backgroundPosition = "center";
+           btn.style.color = "white";
+           btn.style.textShadow = "0 1px 3px rgba(0,0,0,0.8)";
+           btn.style.border = "none";
+        }
+        
+        btn.textContent = kat;
+        btn.onclick = () => {
+          const target = document.getElementById('sec-' + urlSafeKat);
+          const headerOffset = 180; // Üst sabit barların yüksekliği kadar
+          const elementPosition = target.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({
+               top: offsetPosition,
+               behavior: "smooth"
+          });
+        };
+        catScroll.appendChild(btn);
+
+        // Kategori Bölümü
+        const catSec = document.createElement('div');
+        catSec.className = 'category-section';
+        catSec.id = 'sec-' + urlSafeKat;
+        secObserver.observe(catSec);
+        
+        const catTitle = document.createElement('div');
+        catTitle.className = 'category-title';
+        catTitle.textContent = kat;
+        
+        const pList = document.createElement('div');
+        pList.className = 'product-list';
+
+        let urunler = Object.values(menuData[kat] || []);
+
+        urunler.forEach(u => {
+          let desc = u.aciklama ? u.aciklama : '';
+          
+          if (u.ekstraGrup && extraGrupData && extraData) {
+             const gs = u.ekstraGrup.map(gId => extraGrupData[gId]?.ad).filter(Boolean);
+             if (gs.length > 0) {
+                 desc += (desc ? '<br>' : '') + "<span style='color:#0f5132;font-weight:600'>Seçenekler: " + gs.join(', ') + "</span>";
+             }
+          }
+
+          let imgHtml = u.resim ? `<img src="${u.resim}" style="width:105px;height:105px;border-radius:12px;object-fit:cover;margin-left:15px;box-shadow:0 4px 8px rgba(0,0,0,0.12);">` : '';
+
+          const c = document.createElement('div');
+          c.className = 'product-card';
+          c.innerHTML = `
+            <div class="product-info" style="flex:1;">
+              <div class="product-name">${u.ad}</div>
+              ${desc ? `<div class="product-desc">${desc}</div>` : ''}
+              <div class="product-price">${u.fiyat}₺</div>
+            </div>
+            ${imgHtml}
+          `;
+          pList.appendChild(c);
+        });
+
+        catSec.appendChild(catTitle);
+        catSec.appendChild(pList);
+        container.appendChild(catSec);
+
+        isFirst = false;
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
