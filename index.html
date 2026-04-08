@@ -1423,46 +1423,66 @@
     grid.innerHTML = '';
     let bos = 0, dolu = 0;
 
+    const gruplar = {
+       'Salon': [],
+       'Deck': [],
+       'Bahçe': [],
+       'Diğer Masalar': []
+    };
+
     masaNoları.forEach(i => {
        const masa = masalar[i];
-       const doluMu = masa.adisyon && masa.adisyon.length > 0;
-       if (doluMu) dolu++; else bos++;
-
-       const topDiv = document.createElement('div');
-       topDiv.className = `masa ${doluMu ? 'dolu' : 'bos'} ${seciliMasa === i ? 'secili' : ''}`;
-       topDiv.onclick = () => masaSec(i);
-
-       const urunSayisi = doluMu ? masa.adisyon.reduce((s, u) => s + (u.adet||1), 0) : 0;
+       const isim = (masa.isim || `M${i}`).trim();
+       const basHarf = isim.charAt(0).toLowerCase();
        
-       let htmlStr = `
-          <div class="masa-baslik">${masa.isim || ('Masa ' + i)}</div>
-       `;
-
-       if (doluMu) {
-          const sure = masa.acilisZamani ? gecenSure(masa.acilisZamani) : '';
-          const renk = masa.acilisZamani ? masaSureRenk(masa.acilisZamani) : '#22c55e';
-          const toplam = masa.adisyon.reduce((s, u) => s + birimFiyat(u) * u.adet, 0);
-          const yAdet = masa.adisyon.reduce((s, u) => s + (u.yazdirilanAdet || 0), 0);
-          const isGece = masa.adisyon.some(u => u.isGece);
-          const tumuYazdirildi = (yAdet === urunSayisi);
-          const isPaket = (masa.isim || "").toLowerCase().includes('paket');
-
-          htmlStr += `
-            ${!isPaket ? `<div class="masa-sure" style="color:${renk}">⏳ ${sure}</div>` : ''}
-            <div class="masa-tutar">${toplam}₺</div>
-            ${isGece ? '<div style="position:absolute; top:4px; right:4px; font-size:14px;" title="Gece İşlemi">🌙</div>' : ''}
-            ${!tumuYazdirildi ? '<div class="gonder-pulse" style="position:absolute; bottom:6px; left:50%; transform:translateX(-50%); font-size:16px;" title="Gönderilmemiş Ürün Var">⚠️</div>' : ''}
-          `;
-       } else {
-          htmlStr += `<div class="masa-tutar" style="color:#94a3b8; font-size:11px;">Masa Boş</div>`;
-       }
-       
-       topDiv.innerHTML = htmlStr;
-       grid.appendChild(topDiv);
+       if (basHarf === 's' || basHarf === 'ş') gruplar['Salon'].push(i);
+       else if (basHarf === 'd' || basHarf === 'v') gruplar['Deck'].push(i);
+       else if (basHarf === 'b') gruplar['Bahçe'].push(i);
+       else gruplar['Diğer Masalar'].push(i);
     });
 
-    document.getElementById('bos-sayi').textContent = bos;
-    document.getElementById('dolu-sayi').textContent = dolu;
+    Object.keys(gruplar).forEach(grupAdi => {
+       if (gruplar[grupAdi].length === 0) return;
+       
+       const baslik = document.createElement('div');
+       baslik.style.gridColumn = '1 / -1';
+       baslik.style.color = '#f97316';
+       baslik.style.fontSize = '14px';
+       baslik.style.fontWeight = 'bold';
+       baslik.style.borderBottom = '1px solid #334155';
+       baslik.style.paddingBottom = '6px';
+       baslik.style.paddingTop = '10px';
+       baslik.style.marginTop = '6px';
+       baslik.style.textTransform = 'uppercase';
+       baslik.style.letterSpacing = '1px';
+       baslik.textContent = grupAdi;
+       grid.appendChild(baslik);
+
+       gruplar[grupAdi].forEach(i => {
+          const masa = masalar[i];
+          const doluMu = masa.adisyon.length > 0;
+          if (doluMu) dolu++; else bos++;
+          const toplam = masa.adisyon.reduce((s,u) => s + birimFiyat(u) * u.adet, 0);
+          const sure = masa.acilisZamani ? gecenSure(masa.acilisZamani) : '';
+          const renk = doluMu && masa.acilisZamani ? masaSureRenk(masa.acilisZamani) : '#22c55e';
+          
+          const div = document.createElement('div');
+          div.className = `masa ${doluMu?'dolu':'bos'} ${seciliMasa===i?'secili':''}`;
+          if (doluMu) div.style.background = renk;
+          const isim = masa.isim || `M${i}`;
+          div.innerHTML = `
+            <div class="masa-no">${isim}</div>
+            ${doluMu
+              ? `<div class="masa-sure">${sure}</div><div class="masa-toplam">${toplam}₺</div>`
+              : '<div class="masa-sure">Boş</div>'}
+          `;
+          div.onclick = () => masaSec(i);
+          grid.appendChild(div);
+       });
+    });
+
+    document.getElementById('bos-say').textContent = `Boş: ${bos}`;
+    document.getElementById('dolu-say').textContent = `Dolu: ${dolu}`;
   }
 
   function gecenSure(zaman) {
