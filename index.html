@@ -353,6 +353,7 @@
   </style>
 </head>
 <body>
+<div id="internet-durum" style="display:none; position:fixed; top:0; left:0; width:100%; background:#ef4444; color:#fff; text-align:center; padding:10px; font-size:14px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.3);">⚠️ İNTERNET BAĞLANTISI KOPTU! Şuan çevrimdışı çalışıyorsunuz, veriler kaydediliyor ancak diğer cihazlarla eşitlenmiyor.</div>
 
 <!-- SİSTEM GİRİŞ EKRANI -->
 <div id="ana-giris-ekrani" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #334155, #f97316);z-index:99999;align-items:center;justify-content:center;flex-direction:column;color:#fff;">
@@ -2274,7 +2275,6 @@
     filtreli.forEach(k => {
       const iskontoluOran = (k.toplam > 0) ? (k.odenenToplam / k.toplam) : 1;
       let buSiparisGeceHesabi = 0;
-      const siparisSaatiGeceMi = (k.saat >= "00:00" && k.saat <= "08:00");
       (k.urunler || []).forEach(u => {
         let isTatli = false;
         if (u.kategori) {
@@ -2285,7 +2285,7 @@
             if (menu[kat].some(t => t.ad === u.ad)) isTatli = true;
           }
         }
-        if ((u.isGece || siparisSaatiGeceMi) && !isTatli) {
+        if (u.isGece && !isTatli) {
           const bFiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
           buSiparisGeceHesabi += bFiyat * (u.adet || 1);
         }
@@ -3805,6 +3805,17 @@
 
   // Uygulama yüklendiğinde şifre ekranını Firebase üzerinden kontrol et
   cihazOnayKontrol();
+
+  window.addEventListener('offline', () => {
+    const el = document.getElementById('internet-durum');
+    if(el) el.style.display = 'block';
+  });
+  window.addEventListener('online', () => {
+    const el = document.getElementById('internet-durum');
+    if(el) el.style.display = 'none';
+    bildirimGoster('Bağlantı tekrar sağlandı! Senkronizasyon aktif.', '#22c55e');
+  });
+
 </script>
 </body>
 </html>
