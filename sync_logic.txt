@@ -1,0 +1,32 @@
+      no, isim: masalar[no]?.isim || `M${no}`
+    })));
+  }
+
+  // Sayfa açıldığında hardcoded menu Firebase'i ezmesin diye fotoğrafları birleştirir
+  async function menuYukleVeBirlestir() {
+    if (!firebaseUrl) return;
+    try {
+      const r = await fetch(`${firebaseUrl}/menu.json`);
+      if (r.ok) {
+        const fbMenu = await r.json();
+        if (fbMenu && Object.keys(fbMenu).length > 0) {
+           for (const kat in menu) { delete menu[kat]; }
+           for (const kat in fbMenu) { menu[kat] = fbMenu[kat]; }
+           
+---------------------
+    firebaseYukle();
+    masaRender();
+    panelRender();
+    modeUygula();
+    yaziciBtnGuncelle();
+    setTimeout(() => menuYukleVeBirlestir(), 2000);
+  }
+
+  async function uzakSifreDegistir() {
+    const yeni = document.getElementById('yeni-sistem-sifre').value.trim();
+    if (!firebaseUrl) { bildirimGoster('Önce sistemi Firebase\'e bağlamalısınız!', '#dc2626'); return; }
+    const onay = confirm(yeni ? `Şifre "${yeni}" olacak. Tüm diğer cihazlar sistemden atılacak. Emin misiniz?` : `Şifre KALDIRILACAK, sistemi olan herkes girebilecek. Emin misiniz?`);
+    if (!onay) return;
+    try {
+      await fetch(`${firebaseUrl}/sistemSifresi.json`, { method:'PUT', body:JSON.stringify(yeni||null) });
+---------------------
