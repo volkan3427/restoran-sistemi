@@ -1783,13 +1783,13 @@
     const html = `
       <div class="sag-panel-baslik">
         <button class="sag-panel-geri" onclick="sagPanelKapat()">‹</button>
-        <span style="flex:1;font-size:13px;">🔄 Masa ${seciliMasa} Taşı</span>
+        <span style="flex:1;font-size:13px;">🔄 ${seciliMasa} Taşı</span>
       </div>
       <div class="sag-panel-icerik">
         <h4 style="margin: 10px; color: #333;">Hedef (Boş) Masa Seçin:</h4>
         <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
           ${bosMasalar.length === 0 ? '<div style="color:#aaa;">Boş masa bulunmamaktadır.</div>' : bosMasalar.map(no => `
-             <button onclick="hedefMasaTasi(${no})" style="padding:10px 15px; border-radius:8px; background:#3498db; color:#fff; border:none; cursor:pointer; font-weight:bold;">Masa ${no}</button>
+             <button onclick="hedefMasaTasi('${no}')" style="padding:10px 15px; border-radius:8px; background:#3498db; color:#fff; border:none; cursor:pointer; font-weight:bold;">${no}</button>
           `).join('')}
         </div>
       </div>
@@ -1798,7 +1798,7 @@
   }
 
   function hedefMasaTasi(hedefNo) {
-    if (!confirm(`Masa ${seciliMasa} siparişleri Masa ${hedefNo} üzerine taşınacak. Emin misiniz?`)) return;
+    if (!confirm(`"${seciliMasa}" siparişleri "${hedefNo}" üzerine taşınacak. Emin misiniz?`)) return;
     
     window._seciliMasaYedekAdisyon = null; 
     masalar[hedefNo].adisyon = JSON.parse(JSON.stringify(masalar[seciliMasa].adisyon));
@@ -1810,7 +1810,7 @@
     masalar[seciliMasa].indirim = 0;
     
     masalariKaydet();
-    bildirimGoster(`Masa ${seciliMasa}, Masa ${hedefNo} konumuna taşındı`, '#27ae60');
+    bildirimGoster(`"${seciliMasa}", "${hedefNo}" konumuna taşındı`, '#27ae60');
     
     // Geçiş yap
     panelKapat(); 
@@ -1827,14 +1827,14 @@
     const html = `
       <div class="sag-panel-baslik">
         <button class="sag-panel-geri" onclick="sagPanelKapat()">‹</button>
-        <span style="flex:1;font-size:13px;">🤝 Masa ${seciliMasa} Birleştir</span>
+        <span style="flex:1;font-size:13px;">🤝 ${seciliMasa} Birleştir</span>
       </div>
       <div class="sag-panel-icerik">
         <h4 style="margin: 10px; color: #333;">Hangi masa buraya eklensin?</h4>
-        <div style="font-size:11px;color:#f39c12;padding:0 10px;margin-bottom:10px;">Seçeceğiniz masadaki tüm siparişler <b>Masa ${seciliMasa}</b> üzerine aktarılacak ve o masa boşaltılacaktır.</div>
+        <div style="font-size:11px;color:#f39c12;padding:0 10px;margin-bottom:10px;">Seçeceğiniz masadaki tüm siparişler <b>${seciliMasa}</b> üzerine aktarılacak ve o masa boşaltılacaktır.</div>
         <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
           ${doluMasalar.length === 0 ? '<div style="color:#aaa;">Birleştirilecek başka dolu masa bulunmamaktadır.</div>' : doluMasalar.map(no => `
-             <button onclick="hedefMasaBirlestir(${no})" style="padding:10px 15px; border-radius:8px; background:#9b59b6; color:#fff; border:none; cursor:pointer; font-weight:bold;">Masa ${no}</button>
+             <button onclick="hedefMasaBirlestir('${no}')" style="padding:10px 15px; border-radius:8px; background:#9b59b6; color:#fff; border:none; cursor:pointer; font-weight:bold;">${no}</button>
           `).join('')}
         </div>
       </div>
@@ -1843,7 +1843,7 @@
   }
 
   function hedefMasaBirlestir(digerNo) {
-    if (!confirm(`Masa ${digerNo} siparişleri, Masa ${seciliMasa} üzerine EKLENECEK ve Masa ${digerNo} boşaltılacak. Onaylıyor musunuz?`)) return;
+    if (!confirm(`"${digerNo}" siparişleri, "${seciliMasa}" üzerine EKLENECEK ve "${digerNo}" boşaltılacak. Onaylıyor musunuz?`)) return;
     
     window._seciliMasaYedekAdisyon = null;
     const mevcutMasa = masalar[seciliMasa];
@@ -1875,7 +1875,7 @@
     // Adisyon güncellendi, _seciliMasaYedekAdisyon null oldu, ancak biz şu an o panelde olduğumuzdan yeniden yedek almak iyidir.
     window._seciliMasaYedekAdisyon = JSON.parse(JSON.stringify(masalar[seciliMasa].adisyon));
     
-    bildirimGoster(`Masa ${digerNo}, Masa ${seciliMasa} ile birleştirildi.`, '#27ae60');
+    bildirimGoster(`"${digerNo}", "${seciliMasa}" ile birleştirildi.`, '#27ae60');
     
     sagPanelKapat();
     masaRender();
