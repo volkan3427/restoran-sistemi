@@ -1198,7 +1198,7 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(veri)
       });
-    } catch(e) {}
+    } catch(e) { window._cevrimdisiDegisiklikVar = true; }
   }
 
   function firebaseSync() {
@@ -3414,6 +3414,7 @@
   let _sonOrtakMasalarDegisikligi = '';
   async function ortakMasalariCek() {
     if (!firebaseUrl) return;
+    if (window._cevrimdisiDegisiklikVar) return; // Cevrimdisi degisiklik varsa ezme kilitlenir
     // Eğer bu cihaz masalara az önce sipariş girdiyse (son 3 saniye), 
     // sunucudan eski verinin gelip ekranı geri sarmasını (siparişin kaybolup gelmesini) önlemek için atla:
     if (window._sonMasaYukleme && (Date.now() - window._sonMasaYukleme < 5000)) return;
