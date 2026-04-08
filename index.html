@@ -1917,7 +1917,7 @@
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     kayitEkle({
       tarih, saat, masaNo: 'Paket',
-      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:birimFiyat(u), adet:u.adet, isGece: u.isGece, ekstralar: u.ekstralar})),
+      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:birimFiyat(u), adet:u.adet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar})),
       odenenToplam: toplam, odemeYontemi: seciliOdemeYontemi
     });
     bildirimGoster(`${toplam}₺ ödeme alındı (${seciliOdemeYontemi==='nakit'?'Nakit':'Kart'})`, '#27ae60');
@@ -1944,13 +1944,13 @@
     masa.adisyon.forEach((u, i) => {
       const secAdet = odemeAdetler[i] || 0;
       if (secAdet > 0) {
-        seciliUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: secAdet, isGece: u.isGece, ekstralar: u.ekstralar});
+        seciliUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: secAdet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar});
         fisUrunler.push({ad: u.ad, fiyat: birimFiyat(u), adet: secAdet, ekstralar: u.ekstralar || []});
         odenenToplam += u.fiyat * secAdet;
       }
       const kalanAdet = u.adet - secAdet;
       if (kalanAdet > 0) {
-        kalanUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: kalanAdet, isGece: u.isGece, ekstralar: u.ekstralar});
+        kalanUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: kalanAdet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar});
       }
     });
 
@@ -2658,16 +2658,17 @@
   }
 
   function hizliUrunEkle(ad, fiyat, ekstralar) {
+    const isGece = (saatFormatla(new Date()) >= "00:00" && saatFormatla(new Date()) <= "08:00");
     const ekstraAdi = (ekstralar||[]).map(e=>e.ad).sort().join(',');
     const mevcutIndex = hizliAdisyon.findIndex(u =>
-      u.ad === ad && (u.ekstralar||[]).map(e=>e.ad).sort().join(',') === ekstraAdi
+      u.ad === ad && (u.ekstralar||[]).map(e=>e.ad).sort().join(',') === ekstraAdi && (u.isGece || false) === isGece
     );
     
     if (mevcutIndex !== -1) {
       hizliAdisyon[mevcutIndex].adet++;
       hizliSonDuzenlenenIndex = mevcutIndex;
     } else {
-      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[]});
+      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], isGece, kategori: typeof hizliAktifKat !== 'undefined' ? hizliAktifKat : null});
       hizliSonDuzenlenenIndex = hizliAdisyon.length - 1;
     }
     
