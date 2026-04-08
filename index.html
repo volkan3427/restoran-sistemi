@@ -2284,11 +2284,26 @@
     const toplamIslem = filtreli.length;
     const maxAdet = urunSirali.length > 0 ? urunSirali[0].adet : 1;
 
+    let acikCiro = 0;
+    masaNoları.forEach(no => {
+      const masa = masalar[no];
+      if (masa && masa.adisyon && masa.adisyon.length > 0) {
+        masa.adisyon.forEach(item => {
+          acikCiro += (item.fiyat + (item.ekstralar || []).reduce((s,e)=>s+e.fiyat,0)) * (item.adet || 1);
+        });
+      }
+    });
+
     // Özet kutular
     const ozetHtml = `
       <div class="ozet-kutular">
+        <div class="ozet-kutu" style="background:#1e293b; border: 1px solid #334155; box-shadow:none;">
+          <div class="oz-label" style="color:#f97316;">Açık Masa Cirosu</div>
+          <div class="oz-deger" style="color:#f8fafc;">${acikCiro}₺</div>
+          <div class="oz-alt" style="color:#94a3b8;">Şu an açık olan masalar</div>
+        </div>
         <div class="ozet-kutu">
-          <div class="oz-label">Toplam Ciro</div>
+          <div class="oz-label">Kapanmış Net Ciro</div>
           <div class="oz-deger">${toplamCiro}₺</div>
           <div class="oz-alt">${donem === 'bugun' ? 'bugün' : donem === 'dun' ? 'dün' : donem}</div>
         </div>
