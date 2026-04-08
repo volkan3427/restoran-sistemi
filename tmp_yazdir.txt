@@ -1,0 +1,28 @@
+1471:           const yAdet = u.yazdirilanAdet || 0;
+1495:     const gonderilecekVarMi = masa.adisyon.some(u => u.adet > (u.yazdirilanAdet || 0));
+1625:       yeniUrun.yazdirilanAdet = 0;
+1660:       masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece});
+1683:       let yAdet = u.yazdirilanAdet || 0;
+1686:         siparisFisiYazdir(masaIsim, u.ad, u.ekstralar || [], yeniSiparisAdet);
+1687:         u.yazdirilanAdet = u.adet;
+1722:       if (u.adet < (u.yazdirilanAdet || 0)) {
+1723:         u.yazdirilanAdet = u.adet;
+1912:     paketFisiYazdir(hizliAdisyon, toplam, seciliOdemeYontemi);
+1973:     odemeFisiYazdir(masaIsim, fisUrunler, tamToplam, indirimTutar, odenenToplam, seciliOdemeYontemi);
+2657:     siparisFisiYazdir('PAKET', ad, ekstralar, 1);
+2889:   let yaziciFisYazdir = true;
+2897:         if (d.fisYazdir !== undefined) yaziciFisYazdir = d.fisYazdir;
+2905:         otoPrint: yaziciOtoPrint, fisYazdir: yaziciFisYazdir
+2948:                 <input type="checkbox" id="yazici-fis" ${yaziciFisYazdir ? 'checked' : ''} onchange="yaziciFisYazdir=this.checked;yaziciAyarKaydet()">
+2954:           <button class="btn btn-mavi" style="width:100%;margin-top:14px;" onclick="yaziciTestYazdir()">🧪 Ajanı Test Et</button>
+2962:   // ===== ANA YAZDIRMA FONKSİYONLARI =====
+2963:   async function siparisFisiYazdir(masaIsim, urunAd, ekstralar, adet) {
+2971:   async function odemeFisiYazdir(masaIsim, urunler, toplam, indirim, netToplam, odemeYontemi) {
+2972:     if (!yaziciFisYazdir || !firebaseUrl) return;
+2979:   async function paketFisiYazdir(urunler, toplam, odemeYontemi) {
+2980:     if (!yaziciFisYazdir || !firebaseUrl) return;
+2987:   async function yaziciTestYazdir() {
+3101:       siparisFisiYazdir(masaIsim, u.ad, u.ekstralar||[], u.adet||1);
+3131:           await siparisFisiYazdir(...job.args);
+3133:           await odemeFisiYazdir(...job.args);
+3135:           await paketFisiYazdir(...job.args);

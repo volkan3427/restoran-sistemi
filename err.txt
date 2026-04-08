@@ -1,0 +1,9 @@
+C:\Users\volka\OneDrive\Masaüstü\masaüstüsistemi\temp.js:1003
+      masa.adisyon[mevcutIndex].adet++;\n      sonDuzenlenenIndex = mevcutIndex;\n    } else {\n      masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece, kategori: aktifMenuKat});
+                                       ^
+
+SyntaxError: Invalid or unexpected token
+    at wrapSafe (node:internal/modules/cjs/loader:1735:18)
+    at checkSyntax (node:internal/main/check_syntax:76:3)
+
+Node.js v24.13.1
