@@ -269,7 +269,6 @@
     .mod-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; }
     .mod-badge.yonetici { background: #fff; color: #f97316; border: 2px solid rgba(255,255,255,0.5); }
     .mod-badge.garson { background: rgba(255,255,255,0.15); color: #fff; border: 2px solid rgba(255,255,255,0.4); }
-    .yonetici-only { }
 
     /* PIN MODAL */
     .pin-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; }
@@ -1085,6 +1084,7 @@
 
   function masaNoKaydet() {
     try { localStorage.setItem('restoran_masa_nolari', JSON.stringify(masaNoları)); } catch(e) {}
+    if (firebaseUrl) firebaseGonder('v3_masa_nolari', masaNoları);
     menuFirebaseSync();
   }
 
@@ -1779,17 +1779,18 @@
       bildirimGoster('Masa boş!', '#e74c3c'); return;
     }
     const bosMasalar = masaNoları.filter(no => no !== seciliMasa && (!masalar[no] || masalar[no].adisyon.length === 0));
+    const suAnkiAd = masalar[seciliMasa]?.isim || `M${seciliMasa}`;
     
     const html = `
       <div class="sag-panel-baslik">
         <button class="sag-panel-geri" onclick="sagPanelKapat()">‹</button>
-        <span style="flex:1;font-size:13px;">🔄 ${seciliMasa} Taşı</span>
+        <span style="flex:1;font-size:13px;">🔄 ${suAnkiAd} Taşı</span>
       </div>
       <div class="sag-panel-icerik">
         <h4 style="margin: 10px; color: #333;">Hedef (Boş) Masa Seçin:</h4>
         <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
           ${bosMasalar.length === 0 ? '<div style="color:#aaa;">Boş masa bulunmamaktadır.</div>' : bosMasalar.map(no => `
-             <button onclick="hedefMasaTasi('${no}')" style="padding:10px 15px; border-radius:8px; background:#3498db; color:#fff; border:none; cursor:pointer; font-weight:bold;">${no}</button>
+             <button onclick="hedefMasaTasi('${no}')" style="padding:10px 15px; border-radius:8px; background:#3498db; color:#fff; border:none; cursor:pointer; font-weight:bold;">${masalar[no]?.isim || `M${no}`}</button>
           `).join('')}
         </div>
       </div>
@@ -1798,7 +1799,9 @@
   }
 
   function hedefMasaTasi(hedefNo) {
-    if (!confirm(`"${seciliMasa}" siparişleri "${hedefNo}" üzerine taşınacak. Emin misiniz?`)) return;
+    const kaynakAd = masalar[seciliMasa]?.isim || `M${seciliMasa}`;
+    const hedefAd = masalar[hedefNo]?.isim || `M${hedefNo}`;
+    if (!confirm(`"${kaynakAd}" siparişleri "${hedefAd}" üzerine taşınacak. Emin misiniz?`)) return;
     
     window._seciliMasaYedekAdisyon = null; 
     masalar[hedefNo].adisyon = JSON.parse(JSON.stringify(masalar[seciliMasa].adisyon));
@@ -1810,7 +1813,7 @@
     masalar[seciliMasa].indirim = 0;
     
     masalariKaydet();
-    bildirimGoster(`"${seciliMasa}", "${hedefNo}" konumuna taşındı`, '#27ae60');
+    bildirimGoster(`"${kaynakAd}", "${hedefAd}" konumuna taşındı`, '#27ae60');
     
     // Geçiş yap
     panelKapat(); 
@@ -1823,18 +1826,19 @@
       bildirimGoster('Masa boş!', '#e74c3c'); return;
     }
     const doluMasalar = masaNoları.filter(no => no !== seciliMasa && masalar[no] && masalar[no].adisyon.length > 0);
+    const suAnkiAd = masalar[seciliMasa]?.isim || `M${seciliMasa}`;
     
     const html = `
       <div class="sag-panel-baslik">
         <button class="sag-panel-geri" onclick="sagPanelKapat()">‹</button>
-        <span style="flex:1;font-size:13px;">🤝 ${seciliMasa} Birleştir</span>
+        <span style="flex:1;font-size:13px;">🤝 ${suAnkiAd} Birleştir</span>
       </div>
       <div class="sag-panel-icerik">
         <h4 style="margin: 10px; color: #333;">Hangi masa buraya eklensin?</h4>
-        <div style="font-size:11px;color:#f39c12;padding:0 10px;margin-bottom:10px;">Seçeceğiniz masadaki tüm siparişler <b>${seciliMasa}</b> üzerine aktarılacak ve o masa boşaltılacaktır.</div>
+        <div style="font-size:11px;color:#f39c12;padding:0 10px;margin-bottom:10px;">Seçeceğiniz masadaki tüm siparişler <b>${suAnkiAd}</b> üzerine aktarılacak ve o masa boşaltılacaktır.</div>
         <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
           ${doluMasalar.length === 0 ? '<div style="color:#aaa;">Birleştirilecek başka dolu masa bulunmamaktadır.</div>' : doluMasalar.map(no => `
-             <button onclick="hedefMasaBirlestir('${no}')" style="padding:10px 15px; border-radius:8px; background:#9b59b6; color:#fff; border:none; cursor:pointer; font-weight:bold;">${no}</button>
+             <button onclick="hedefMasaBirlestir('${no}')" style="padding:10px 15px; border-radius:8px; background:#9b59b6; color:#fff; border:none; cursor:pointer; font-weight:bold;">${masalar[no]?.isim || `M${no}`}</button>
           `).join('')}
         </div>
       </div>
@@ -1843,7 +1847,9 @@
   }
 
   function hedefMasaBirlestir(digerNo) {
-    if (!confirm(`"${digerNo}" siparişleri, "${seciliMasa}" üzerine EKLENECEK ve "${digerNo}" boşaltılacak. Onaylıyor musunuz?`)) return;
+    const kaynakAd = masalar[digerNo]?.isim || `M${digerNo}`;
+    const hedefAd = masalar[seciliMasa]?.isim || `M${seciliMasa}`;
+    if (!confirm(`"${kaynakAd}" siparişleri, "${hedefAd}" üzerine EKLENECEK ve "${kaynakAd}" boşaltılacak. Onaylıyor musunuz?`)) return;
     
     window._seciliMasaYedekAdisyon = null;
     const mevcutMasa = masalar[seciliMasa];
@@ -3314,10 +3320,26 @@
     if (window._sonMasaYukleme && (Date.now() - window._sonMasaYukleme < 5000)) return;
     try {
       const t = Date.now();
+      
+      const nmResp = await fetch(`${firebaseUrl}/v3_masa_nolari.json?_t=${t}`, { cache: 'no-store' });
+      if (nmResp.ok) {
+         const nmData = await nmResp.json();
+         if (nmData && Array.isArray(nmData)) {
+            const yeniNM = JSON.stringify(nmData);
+            if (yeniNM !== JSON.stringify(masaNoları)) {
+                 masaNoları = nmData;
+                 try { localStorage.setItem('restoran_masa_nolari', yeniNM); } catch(e){}
+                 masaNoları.forEach(no => { if (!masalar[no]) masalar[no] = {adisyon:[], acilisZamani:null}; });
+                 masaYonetimRender();
+                 masaRender();
+            }
+         }
+      }
+
       const r = await fetch(`${firebaseUrl}/v3_ortak_masalar.json?_t=${t}`, { cache: 'no-store' });
       if (!r.ok) return;
-      const data = await r.json();
-      if (!data || typeof data !== 'object') return;
+      let data = await r.json();
+      if (!data || typeof data !== 'object') data = {};
 
       // Firebase boş dizileri (adisyon: []) ve null'ları veritabanından siler. 
       // Çekilen veride bozulan yapıyı tamir edelim:
@@ -3331,11 +3353,8 @@
 
       if (yeniJson === mevcutJson) { _sonOrtakMasalarDegisikligi = yeniJson; return; }
       if (yeniJson !== mevcutJson && yeniJson !== _sonOrtakMasalarDegisikligi) {
-        if (seciliMasa && data[seciliMasa]) {
-            data[seciliMasa].adisyon = Object.assign([], masalar[seciliMasa].adisyon);
-            data[seciliMasa].acilisZamani = masalar[seciliMasa].acilisZamani;
-            data[seciliMasa].isim = masalar[seciliMasa].isim;
-        }
+        // Not: Eskiden burada seciliMasa'yı koruyan bir kod bloğu vardı. 
+        // Bu blok, kapanmış masaların ekranı açıkken tekrar eski ürünlerle geri gelmesine sebep oluyordu, bu yüzden kaldırıldı.
         masalar = data;
         _sonOrtakMasalarDegisikligi = yeniJson;
         
