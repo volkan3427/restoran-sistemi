@@ -1,0 +1,155 @@
+[
+  {
+    "masaNo": 10,
+    "odemeYontemi": "kart",
+    "odenenToplam": 355,
+    "saat": "00:11",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Churchill",
+        "adet": 1,
+        "fiyat": 110,
+        "isGece": false
+      },
+      {
+        "ad": "İce Vanilya Latte",
+        "adet": 1,
+        "fiyat": 245,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 6,
+    "odemeYontemi": "kart",
+    "odenenToplam": 1090,
+    "saat": "00:13",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "İce Americano",
+        "adet": 3,
+        "fiyat": 200,
+        "isGece": false
+      },
+      {
+        "ad": "Latte",
+        "adet": 1,
+        "fiyat": 210,
+        "isGece": false
+      },
+      {
+        "ad": "Demleme Çay",
+        "adet": 4,
+        "fiyat": 70,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 13,
+    "odemeYontemi": "kart",
+    "odenenToplam": 280,
+    "saat": "00:18",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Demleme Çay",
+        "adet": 4,
+        "fiyat": 70,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 4,
+    "odemeYontemi": "kart",
+    "odenenToplam": 260,
+    "saat": "00:23",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Türk Kahvesi",
+        "adet": 1,
+        "fiyat": 120,
+        "isGece": false
+      },
+      {
+        "ad": "Maden Suyu",
+        "adet": 2,
+        "fiyat": 70,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 9,
+    "odemeYontemi": "kart",
+    "odenenToplam": 510,
+    "saat": "00:29",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Fincan Çay",
+        "adet": 1,
+        "fiyat": 100,
+        "isGece": false
+      },
+      {
+        "ad": "Americano",
+        "adet": 1,
+        "fiyat": 200,
+        "isGece": false
+      },
+      {
+        "ad": "Flat White",
+        "adet": 1,
+        "fiyat": 210,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 14,
+    "odemeYontemi": "kart",
+    "odenenToplam": 750,
+    "saat": "00:32",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Demleme Çay",
+        "adet": 4,
+        "fiyat": 70,
+        "isGece": false
+      },
+      {
+        "ad": "ekler",
+        "adet": 2,
+        "fiyat": 100,
+        "isGece": false
+      },
+      {
+        "ad": "profiterol 3 top",
+        "adet": 1,
+        "fiyat": 270,
+        "isGece": false
+      }
+    ]
+  },
+  {
+    "masaNo": 3,
+    "odemeYontemi": "kart",
+    "odenenToplam": 200,
+    "saat": "00:49",
+    "tarih": "2026-04-09",
+    "urunler": [
+      {
+        "ad": "Yeşil Çay",
+        "adet": 1,
+        "fiyat": 200,
+        "isGece": true
+      }
+    ]
+  }
+]

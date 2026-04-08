@@ -14,7 +14,7 @@ echo.
 echo =======================================================
 echo ISLEM TAMAMLANDI!
 echo Kodlarin basariyla yuklendi.
-echo Netlify 1-2 dakika icinde siteni otomatik olarak yenileyecek.
+echo Github Pages 1-2 dakika icinde siteni otomatik olarak yenileyecek.
 echo =======================================================
 echo.
 pause

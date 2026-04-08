@@ -1253,7 +1253,18 @@
   }
 
   function kayitlariAl() {
-    try { return JSON.parse(localStorage.getItem('restoran_kayitlar') || '[]'); } catch(e) { return []; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem('restoran_kayitlar') || '[]');
+      const imzaSet = new Set();
+      return parsed.filter(k => {
+        const urunSayisi = k.urunler ? k.urunler.length : 0;
+        const odenen = k.odenenToplam || 0;
+        const imza = `${k.tarih}_${k.saat}_${k.masaNo}_${odenen}_${urunSayisi}`;
+        if (imzaSet.has(imza)) return false;
+        imzaSet.add(imza);
+        return true;
+      });
+    } catch(e) { return []; }
   }
 
   async function kayitEkle(kayit) {
@@ -2083,7 +2094,7 @@
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     kayitEkle({
       tarih, saat, masaNo: 'Paket',
-      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:birimFiyat(u), adet:u.adet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar})),
+      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:u.fiyat, adet:u.adet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar})),
       odenenToplam: toplam, odemeYontemi: seciliOdemeYontemi
     });
     bildirimGoster(`${toplam}₺ ödeme alındı (${seciliOdemeYontemi==='nakit'?'Nakit':'Kart'})`, '#27ae60');
@@ -2112,7 +2123,7 @@
       if (secAdet > 0) {
         seciliUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: secAdet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar});
         fisUrunler.push({ad: u.ad, fiyat: birimFiyat(u), adet: secAdet, ekstralar: u.ekstralar || []});
-        odenenToplam += u.fiyat * secAdet;
+        odenenToplam += birimFiyat(u) * secAdet;
       }
       const kalanAdet = u.adet - secAdet;
       if (kalanAdet > 0) {
@@ -2263,6 +2274,7 @@
     filtreli.forEach(k => {
       const iskontoluOran = (k.toplam > 0) ? (k.odenenToplam / k.toplam) : 1;
       let buSiparisGeceHesabi = 0;
+      const siparisSaatiGeceMi = (k.saat >= "00:00" && k.saat <= "08:00");
       (k.urunler || []).forEach(u => {
         let isTatli = false;
         if (u.kategori) {
@@ -2273,7 +2285,7 @@
             if (menu[kat].some(t => t.ad === u.ad)) isTatli = true;
           }
         }
-        if (u.isGece && !isTatli) {
+        if ((u.isGece || siparisSaatiGeceMi) && !isTatli) {
           const bFiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
           buSiparisGeceHesabi += bFiyat * (u.adet || 1);
         }
