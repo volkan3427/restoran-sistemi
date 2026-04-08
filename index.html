@@ -1812,7 +1812,8 @@
     masalar[seciliMasa].acilisZamani = null;
     masalar[seciliMasa].indirim = 0;
     
-    masalariKaydet();
+    masalariKaydet(seciliMasa);
+    masalariKaydet(hedefNo);
     bildirimGoster(`"${kaynakAd}", "${hedefAd}" konumuna taşındı`, '#27ae60');
     
     // Geçiş yap
@@ -1876,7 +1877,8 @@
     eklenecekMasa.acilisZamani = null;
     eklenecekMasa.indirim = 0;
     
-    masalariKaydet();
+    masalariKaydet(seciliMasa);
+    masalariKaydet(digerNo);
     
     // Adisyon güncellendi, _seciliMasaYedekAdisyon null oldu, ancak biz şu an o panelde olduğumuzdan yeniden yedek almak iyidir.
     window._seciliMasaYedekAdisyon = JSON.parse(JSON.stringify(masalar[seciliMasa].adisyon));
