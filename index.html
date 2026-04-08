@@ -2626,7 +2626,7 @@
     masaNoları.push(yeniNo);
     masalar[yeniNo] = {adisyon:[], acilisZamani:null};
     masaNoKaydet();
-    masalariKaydet();
+    masalariKaydet(null);
     masaYonetimRender();
     masaRender();
     bildirimGoster(`Masa ${yeniNo} eklendi`, '#2980b9');
@@ -2634,7 +2634,7 @@
 
   function masaIsimDegistir(no, yeniIsim) {
     masalar[no].isim = yeniIsim.trim() || `M${no}`;
-    masalariKaydet();
+    masalariKaydet(no);
     menuFirebaseSync();
     masaRender();
     if (seciliMasa === no) panelRender();
@@ -2651,7 +2651,7 @@
     delete masalar[no];
     if (seciliMasa === no) { seciliMasa = null; panelRender(); }
     masaNoKaydet();
-    masalariKaydet();
+    masalariKaydet(null);
     masaYonetimRender();
     masaRender();
     bildirimGoster(`Masa ${no} silindi`, '#e94560');
@@ -3325,11 +3325,15 @@
       
       const nmResp = await fetch(`${firebaseUrl}/v3_masa_nolari.json?_t=${t}`, { cache: 'no-store' });
       if (nmResp.ok) {
-         const nmData = await nmResp.json();
-         if (nmData && Array.isArray(nmData)) {
-            const yeniNM = JSON.stringify(nmData);
+         let nmData = await nmResp.json();
+         if (nmData) {
+            let gecerliDizi = [];
+            if (Array.isArray(nmData)) gecerliDizi = nmData.filter(n => n !== null);
+            else if (typeof nmData === 'object') gecerliDizi = Object.values(nmData).filter(n => n !== null);
+            
+            const yeniNM = JSON.stringify(gecerliDizi);
             if (yeniNM !== JSON.stringify(masaNoları)) {
-                 masaNoları = nmData;
+                 masaNoları = gecerliDizi;
                  try { localStorage.setItem('restoran_masa_nolari', yeniNM); } catch(e){}
                  masaNoları.forEach(no => { if (!masalar[no]) masalar[no] = {adisyon:[], acilisZamani:null}; });
                  masaYonetimRender();
