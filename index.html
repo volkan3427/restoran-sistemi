@@ -1657,7 +1657,7 @@
       masa.adisyon[mevcutIndex].adet++;
       sonDuzenlenenIndex = mevcutIndex;
     } else {
-      masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece});
+      masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece, kategori: aktifMenuKat});
       sonDuzenlenenIndex = masa.adisyon.length - 1;
     }
     sonDuzenlenenMasa = seciliMasa;
@@ -1678,16 +1678,29 @@
     const masa = masalar[seciliMasa];
     const masaIsim = masa.isim || `Masa ${seciliMasa}`;
     let gonderildi = false;
+    let yazdirilacaklar = [];
 
     masa.adisyon.forEach(u => {
       let yAdet = u.yazdirilanAdet || 0;
       if (u.adet > yAdet) {
         const yeniSiparisAdet = u.adet - yAdet;
-        siparisFisiYazdir(masaIsim, u.ad, u.ekstralar || [], yeniSiparisAdet);
+        yazdirilacaklar.push({ ad: u.ad, ekstralar: u.ekstralar || [], adet: yeniSiparisAdet });
         u.yazdirilanAdet = u.adet;
         gonderildi = true;
       }
     });
+
+    if (yazdirilacaklar.length > 0) {
+      if (yazdirilacaklar.length === 1) {
+        siparisFisiYazdir(masaIsim, yazdirilacaklar[0].ad, yazdirilacaklar[0].ekstralar, yazdirilacaklar[0].adet);
+      } else {
+        const birlesikAd = yazdirilacaklar.map(u => {
+          let e = u.ekstralar.length > 0 ? " (" + u.ekstralar.map(x=>x.ad).join(',') + ")" : "";
+          return u.adet + "x " + u.ad + e;
+        }).join('\n');
+        siparisFisiYazdir(masaIsim, "\n__ÇOKLU SİPARİŞ__\n" + birlesikAd, [], "");
+      }
+    }
 
     // Sipariş gönder tuşuna basıldığında kayıt işlemi fiiliyata geçer:
     window._seciliMasaYedekAdisyon = null; 
@@ -2085,7 +2098,16 @@
       const iskontoluOran = (k.toplam > 0) ? (k.odenenToplam / k.toplam) : 1;
       let buSiparisGeceHesabi = 0;
       (k.urunler || []).forEach(u => {
-        if (u.isGece) {
+        let isTatli = false;
+        if (u.kategori) {
+          isTatli = u.kategori.toLowerCase().includes('tatl');
+        } else if (typeof menu !== 'undefined') {
+          const tatliKatlari = Object.keys(menu).filter(k => k.toLowerCase().includes('tatl'));
+          for (let kat of tatliKatlari) {
+            if (menu[kat].some(t => t.ad === u.ad)) isTatli = true;
+          }
+        }
+        if (u.isGece && !isTatli) {
           const bFiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
           buSiparisGeceHesabi += bFiyat * (u.adet || 1);
         }
