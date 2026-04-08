@@ -3474,7 +3474,7 @@
 
       const kilitEkran = document.getElementById('ana-giris-ekrani');
       
-      if (onayDurumu === true) {
+      if (onayDurumu !== null && onayDurumu !== false) {
          if (kilitEkran) kilitEkran.style.display = 'none';
          if (!cihazOnaylandi) { cihazOnaylandi = true; sistemiBaslat(); }
       } else {
@@ -3559,11 +3559,13 @@
        }
        // Onaylıları bas
        for (const [id, durum] of Object.entries(onaylilar)) {
-          if (durum === true) {
+          if (durum) {
+            const cihazAdiGoster = typeof durum === 'string' ? durum : 'Bilinmeyen Cihaz';
             html += `
                <div style="background:#1d4ed820; border:1px solid #1d4ed8; padding:8px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                  <div>
-                    <div style="font-size:12px; font-weight:bold; color:#60a5fa;">Cihaz ID: ${id} (Onaylı)</div>
+                    <div style="font-size:12px; font-weight:bold; color:#60a5fa;">${cihazAdiGoster} (Onaylı)</div>
+                    <div style="font-size:9px; color:#888;">ID: ${id}</div>
                  </div>
                  <button class="btn btn-iptal" style="padding:4px 8px; font-size:10px; background:#e11d48;" onclick="cihazSil('${id}')">🗑️ İzin İptal</button>
                </div>
@@ -3578,7 +3580,7 @@
   async function cihazOnayla(id, ad) {
      if (!firebaseUrl) return;
      try {
-       await fetch(`${firebaseUrl}/v3_cihaz_onaylari/${id}.json`, { method:'PUT', body:'true' });
+       await fetch(`${firebaseUrl}/v3_cihaz_onaylari/${id}.json`, { method:'PUT', body:JSON.stringify(ad || id) });
        // Bekleyenlerden sil
        await fetch(`${firebaseUrl}/v3_cihaz_bekleyen/${id}.json`, { method:'DELETE' });
        cihazlariYukleVeYonet();
