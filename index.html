@@ -419,7 +419,8 @@
         <span class="toplam-label">Toplam</span>
         <span class="toplam-deger" id="hizli-toplam">0₺</span>
       </div>
-      <div class="butonlar" style="margin-top:8px;">
+      <div class="butonlar" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-onayla" style="padding:12px; font-size:14px; font-weight:bold; background-color:#f39c12; color:white; border:none; border-radius:8px;" onclick="hizliSiparisiYazdir()">🚀 Mutfağa Yazdır</button>
         <button class="btn btn-kapat" onclick="hizliOdemeAc()">💳 Ödeme Al</button>
       </div>
     </div>
@@ -2786,7 +2787,7 @@
       hizliAdisyon[mevcutIndex].adet++;
       hizliSonDuzenlenenIndex = mevcutIndex;
     } else {
-      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], isGece, kategori: typeof hizliAktifKat !== 'undefined' ? hizliAktifKat : null});
+      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], isGece, kategori: typeof hizliAktifKat !== 'undefined' ? hizliAktifKat : null, yazdirilanAdet: 0});
       hizliSonDuzenlenenIndex = hizliAdisyon.length - 1;
     }
     
@@ -2795,7 +2796,24 @@
     }
     
     hizliAdisyonRender();
-    siparisFisiYazdir('PAKET', ad, ekstralar, 1);
+  }
+
+  function hizliSiparisiYazdir() {
+    let yazdirildi = false;
+    for (let u of hizliAdisyon) {
+      let yazilacakAdet = u.adet - (u.yazdirilanAdet || 0);
+      if (yazilacakAdet > 0) {
+        siparisFisiYazdir('PAKET', u.ad, u.ekstralar, yazilacakAdet);
+        u.yazdirilanAdet = u.adet;
+        yazdirildi = true;
+      }
+    }
+    if (yazdirildi) {
+      bildirimGoster('Sipariş mutfağa yazdırıldı.', '#27ae60');
+      hizliAdisyonRender();
+    } else {
+      bildirimGoster('Yazdırılacak yeni ürün yok.', '#f39c12');
+    }
   }
 
   function hizliAdisyonRender() {
