@@ -370,7 +370,7 @@
   <div class="header-right">
     <span class="stat-badge bos" id="bos-say">Boş: 0</span>
     <span class="stat-badge dolu" id="dolu-say">Dolu: 0</span>
-    <span class="stat-badge yonetici-only" id="gunluk-ciro">Ciro: 0₺</span>
+    
     <button class="nav-btn aktif" onclick="sayfaGoster('garson', this)">🪑 Masalar</button>
     <button class="nav-btn yonetici-only" id="nav-hizli" onclick="sayfaGoster('hizli', this)">🥡 Hızlı Satış</button>
     <button class="nav-btn yonetici-only" id="nav-raporlar" onclick="sayfaGoster('raporlar', this)">📊 Raporlar</button>
@@ -1470,7 +1470,6 @@
 
     document.getElementById('bos-say').textContent = `Boş: ${bos}`;
     document.getElementById('dolu-say').textContent = `Dolu: ${dolu}`;
-    document.getElementById('gunluk-ciro').textContent = `Ciro: ${gunlukCiroHesapla()}₺`;
   }
 
   function gecenSure(zaman) {
