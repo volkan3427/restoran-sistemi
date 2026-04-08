@@ -1093,6 +1093,7 @@
   let seciliMasa = null;
   let aktifKategori = Object.keys(menu)[0];
   let seciliOdemeYontemi = 'nakit';
+  window._cevrimdisiDegisiklikVar = false;
 
   // localStorage'dan masaları yükle
   function masalariYukle() {
@@ -3813,7 +3814,17 @@
   window.addEventListener('online', () => {
     const el = document.getElementById('internet-durum');
     if(el) el.style.display = 'none';
-    bildirimGoster('Bağlantı tekrar sağlandı! Senkronizasyon aktif.', '#22c55e');
+    
+    if (window._cevrimdisiDegisiklikVar) {
+       bildirimGoster('Bağlantı sağlandı! Çevrimdışı veriler yükleniyor...', '#f39c12');
+       firebaseSync();
+       setTimeout(() => {
+         window._cevrimdisiDegisiklikVar = false;
+         bildirimGoster('Çevrimdışı veriler başarıyla eşitlendi!', '#22c55e');
+       }, 2000);
+    } else {
+       bildirimGoster('Bağlantı tekrar sağlandı! Senkronizasyon aktif.', '#22c55e');
+    }
   });
 
 </script>
