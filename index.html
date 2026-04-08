@@ -2646,18 +2646,48 @@
 
   function masaYonetimRender() {
     const grid = document.getElementById('masa-yonetim-grid');
-    grid.innerHTML = masaNoları.map(no => {
-      const doluMu = masalar[no] && masalar[no].adisyon.length > 0;
-      const isim = masalar[no].isim || `M${no}`;
-      return `
-        <div class="my-masa-kart ${doluMu ? 'dolu' : 'bos'}">
-          ${!doluMu ? `<button class="my-sil-btn" onclick="masaSil(${no})" title="Masayı sil">×</button>` : ''}
-          <div class="my-masa-no">M${no}</div>
-          <input class="my-isim-input" value="${isim}" onchange="masaIsimDegistir(${no}, this.value)" placeholder="İsim..." ${doluMu ? 'disabled' : ''} />
-          <div class="my-masa-durum">${doluMu ? '🔴 Dolu' : '🟢 Boş'}</div>
-        </div>
-      `;
-    }).join('');
+    grid.innerHTML = '';
+    
+    const gruplar = {
+       'Salon': [],
+       'Deck': [],
+       'Bahçe': [],
+       'Diğer Masalar': []
+    };
+
+    masaNoları.forEach(no => {
+       const masa = masalar[no];
+       const isim = (masa.isim || `M${no}`).trim();
+       const basHarf = isim.charAt(0).toLowerCase();
+       
+       if (basHarf === 's' || basHarf === 'ş') gruplar['Salon'].push(no);
+       else if (basHarf === 'd' || basHarf === 'v') gruplar['Deck'].push(no);
+       else if (basHarf === 'b') gruplar['Bahçe'].push(no);
+       else gruplar['Diğer Masalar'].push(no);
+    });
+
+    let html = '';
+    Object.keys(gruplar).forEach(grupAdi => {
+       if (gruplar[grupAdi].length === 0) return;
+       html += `
+         <div style="grid-column: 1 / -1; color: #f97316; font-size: 14px; font-weight: bold; border-bottom: 1px solid #334155; padding-bottom: 6px; padding-top: 10px; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px;">
+            ${grupAdi}
+         </div>
+       `;
+       gruplar[grupAdi].forEach(no => {
+         const doluMu = masalar[no] && masalar[no].adisyon.length > 0;
+         const isim = masalar[no].isim || `M${no}`;
+         html += `
+           <div class="my-masa-kart ${doluMu ? 'dolu' : 'bos'}">
+             ${!doluMu ? `<button class="my-sil-btn" onclick="masaSil(${no})" title="Masayı sil">×</button>` : ''}
+             <div class="my-masa-no">M${no}</div>
+             <input class="my-isim-input" value="${isim}" onchange="masaIsimDegistir(${no}, this.value)" placeholder="İsim..." ${doluMu ? 'disabled' : ''} />
+             <div class="my-masa-durum">${doluMu ? '🔴 Dolu' : '🟢 Boş'}</div>
+           </div>
+         `;
+       });
+    });
+    grid.innerHTML = html;
   }
 
   function masaEkle() {
