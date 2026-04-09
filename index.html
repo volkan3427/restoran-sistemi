@@ -1442,7 +1442,7 @@
     });
 
     Object.keys(gruplar).forEach(grupAdi => {
-       if (gruplar[grupAdi].length === 0) return;
+       // if (gruplar[grupAdi].length === 0) return;
        
        const baslik = document.createElement('div');
        baslik.style.gridColumn = '1 / -1';
@@ -1460,7 +1460,7 @@
 
        gruplar[grupAdi].forEach(i => {
           const masa = masalar[i];
-          const doluMu = masa.adisyon.length > 0;
+          const doluMu = masa.adisyon && masa.adisyon.length > 0;
           if (doluMu) dolu++; else bos++;
           const toplam = masa.adisyon.reduce((s,u) => s + birimFiyat(u) * u.adet, 0);
           const sure = masa.acilisZamani ? gecenSure(masa.acilisZamani) : '';
