@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -353,7 +354,6 @@
   </style>
 </head>
 <body>
-<div id="internet-durum" style="display:none; position:fixed; top:0; left:0; width:100%; background:#ef4444; color:#fff; text-align:center; padding:10px; font-size:14px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.3);">⚠️ İNTERNET BAĞLANTISI KOPTU! Şuan çevrimdışı çalışıyorsunuz, veriler kaydediliyor ancak diğer cihazlarla eşitlenmiyor.</div>
 
 <!-- SİSTEM GİRİŞ EKRANI -->
 <div id="ana-giris-ekrani" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #334155, #f97316);z-index:99999;align-items:center;justify-content:center;flex-direction:column;color:#fff;">
@@ -1093,7 +1093,6 @@
   let seciliMasa = null;
   let aktifKategori = Object.keys(menu)[0];
   let seciliOdemeYontemi = 'nakit';
-  window._cevrimdisiDegisiklikVar = false;
 
   // localStorage'dan masaları yükle
   function masalariYukle() {
@@ -1198,7 +1197,7 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(veri)
       });
-    } catch(e) { window._cevrimdisiDegisiklikVar = true; }
+    } catch(e) {}
   }
 
   function firebaseSync() {
@@ -1255,18 +1254,7 @@
   }
 
   function kayitlariAl() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem('restoran_kayitlar') || '[]');
-      const imzaSet = new Set();
-      return parsed.filter(k => {
-        const urunSayisi = k.urunler ? k.urunler.length : 0;
-        const odenen = k.odenenToplam || 0;
-        const imza = `${k.tarih}_${k.saat}_${k.masaNo}_${odenen}_${urunSayisi}`;
-        if (imzaSet.has(imza)) return false;
-        imzaSet.add(imza);
-        return true;
-      });
-    } catch(e) { return []; }
+    try { return JSON.parse(localStorage.getItem('restoran_kayitlar') || '[]'); } catch(e) { return []; }
   }
 
   async function kayitEkle(kayit) {
@@ -1442,7 +1430,7 @@
     });
 
     Object.keys(gruplar).forEach(grupAdi => {
-       // if (gruplar[grupAdi].length === 0) return;
+       if (gruplar[grupAdi].length === 0) return;
        
        const baslik = document.createElement('div');
        baslik.style.gridColumn = '1 / -1';
@@ -1460,7 +1448,7 @@
 
        gruplar[grupAdi].forEach(i => {
           const masa = masalar[i];
-          const doluMu = masa.adisyon && masa.adisyon.length > 0;
+          const doluMu = masa.adisyon.length > 0;
           if (doluMu) dolu++; else bos++;
           const toplam = masa.adisyon.reduce((s,u) => s + birimFiyat(u) * u.adet, 0);
           const sure = masa.acilisZamani ? gecenSure(masa.acilisZamani) : '';
@@ -2096,7 +2084,7 @@
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     kayitEkle({
       tarih, saat, masaNo: 'Paket',
-      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:u.fiyat, adet:u.adet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar})),
+      urunler: hizliAdisyon.map(u => ({ad:u.ad, fiyat:birimFiyat(u), adet:u.adet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar})),
       odenenToplam: toplam, odemeYontemi: seciliOdemeYontemi
     });
     bildirimGoster(`${toplam}₺ ödeme alındı (${seciliOdemeYontemi==='nakit'?'Nakit':'Kart'})`, '#27ae60');
@@ -2125,7 +2113,7 @@
       if (secAdet > 0) {
         seciliUrunler.push({ad: u.ad, fiyat: u.fiyat, adet: secAdet, isGece: u.isGece, kategori: u.kategori, ekstralar: u.ekstralar});
         fisUrunler.push({ad: u.ad, fiyat: birimFiyat(u), adet: secAdet, ekstralar: u.ekstralar || []});
-        odenenToplam += birimFiyat(u) * secAdet;
+        odenenToplam += u.fiyat * secAdet;
       }
       const kalanAdet = u.adet - secAdet;
       if (kalanAdet > 0) {
@@ -3414,7 +3402,6 @@
   let _sonOrtakMasalarDegisikligi = '';
   async function ortakMasalariCek() {
     if (!firebaseUrl) return;
-    if (window._cevrimdisiDegisiklikVar) return; // Cevrimdisi degisiklik varsa ezme kilitlenir
     // Eğer bu cihaz masalara az önce sipariş girdiyse (son 3 saniye), 
     // sunucudan eski verinin gelip ekranı geri sarmasını (siparişin kaybolup gelmesini) önlemek için atla:
     if (window._sonMasaYukleme && (Date.now() - window._sonMasaYukleme < 5000)) return;
@@ -3807,27 +3794,6 @@
 
   // Uygulama yüklendiğinde şifre ekranını Firebase üzerinden kontrol et
   cihazOnayKontrol();
-
-  window.addEventListener('offline', () => {
-    const el = document.getElementById('internet-durum');
-    if(el) el.style.display = 'block';
-  });
-  window.addEventListener('online', () => {
-    const el = document.getElementById('internet-durum');
-    if(el) el.style.display = 'none';
-    
-    if (window._cevrimdisiDegisiklikVar) {
-       bildirimGoster('Bağlantı sağlandı! Çevrimdışı veriler yükleniyor...', '#f39c12');
-       firebaseSync();
-       setTimeout(() => {
-         window._cevrimdisiDegisiklikVar = false;
-         bildirimGoster('Çevrimdışı veriler başarıyla eşitlendi!', '#22c55e');
-       }, 2000);
-    } else {
-       bildirimGoster('Bağlantı tekrar sağlandı! Senkronizasyon aktif.', '#22c55e');
-    }
-  });
-
 </script>
 </body>
 </html>
