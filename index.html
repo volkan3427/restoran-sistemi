@@ -598,6 +598,13 @@
     </div>
 
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460; text-align:center;">
+      <div style="font-size:13px;color:#3b82f6;margin-bottom:8px;font-weight:bold;">☁️ Cihazlar Arası Geçmiş Aktarımı (Sadece Hata Çözümü İçin)</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Bilgisiyarda rapor tutarları şişmiş veya yanlışsa; TELEFONDAN yedekle butonuna basıp, BİLGİSAYARDAN indir butonuna basarak hatayı onarabilirsiniz.</div>
+      <button class="btn btn-mavi" style="width:100%;padding:10px;font-size:13px;margin-bottom:8px;" onclick="gecmisiBulutaYedekle()">⬆️ Telefondayım: Doğru Geçmişi Buluta Kopyala</button>
+      <button class="btn btn-kapat" style="width:100%;padding:10px;font-size:13px;" onclick="gecmisiBuluttanIndir()">⬇️ Bilgisayardayım: Doğru Geçmişi Birlgisayara Çek</button>
+    </div>
+
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460; text-align:center;">
       <div style="font-size:13px;color:#f97316;margin-bottom:8px;font-weight:bold;">💾 Netlify Yedekleme (Dosyaya Kaydet)</div>
       <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Tüm yeni resimlerinizi ve menünüzü index.html dosyasına kalıcı gömer.</div>
       <button class="btn btn-onayla" id="btn-kalici-kaydet" style="width:100%;padding:10px;font-size:13px;background-color:#22c55e;border-color:#16a34a;" onclick="kaliciKodaKaydet()">🚀 Mevcut Menüyü Dosyaya Kalıcı Yaz</button>
@@ -1365,6 +1372,39 @@
       
       await _senkronizePromise;
       _senkronizePromise = null;
+  }
+  async function gecmisiBulutaYedekle() {
+    if (!firebaseUrl) { bildirimGoster('Firebase bağlı değil!', '#e74c3c'); return; }
+    if (!confirm('DİKKAT! Bu işlem şu an bu cihazda bulunan TÜM SATIŞ GEÇMİŞİNİ buluta yedekleyecektir. Doğru cihazda (Telefonda) olduğunuza emin misiniz?')) return;
+    try {
+        const kayitlar = kayitlariAl();
+        await firebaseGonder('v3_tumCihazGecmisYedek', kayitlar);
+        bildirimGoster('Geçmiş başarıyla buluta yedeklendi!', '#22c55e');
+    } catch(e) {
+        bildirimGoster('Bağlantı hatası oluştu', '#e74c3c');
+    }
+  }
+
+  async function gecmisiBuluttanIndir() {
+    if (!firebaseUrl) { bildirimGoster('Firebase bağlı değil!', '#e74c3c'); return; }
+    if (!confirm('DİKKAT! Bu cihazdaki MEVCUT GEÇMİŞ SİLİNİP yerine buluttaki yedek yazılacaktır. Bilgisayardaysanız onaylayın. Emin misiniz?')) return;
+    try {
+        const t = Date.now();
+        const r = await fetch(`${firebaseUrl}/v3_tumCihazGecmisYedek.json?_t=${t}`);
+        if (!r.ok) { bildirimGoster('Yedek bulunamadı veya ağ hatası!', '#e74c3c'); return; }
+        const data = await r.json();
+        if (data) {
+           let veriler = Array.isArray(data) ? data : Object.values(data);
+           localStorage.setItem('restoran_kayitlar', JSON.stringify(veriler));
+           bildirimGoster('Geçmiş başarıyla bu cihaza çekildi!', '#22c55e');
+           const raporEkrani = document.getElementById('sayfa-raporlar');
+           if (raporEkrani && raporEkrani.classList.contains('aktif')) raporRender();
+        } else {
+           bildirimGoster('Bulutta yedek yok. Önce asıl cihazdan yedekleyin!', '#e74c3c');
+        }
+    } catch(e) {
+        bildirimGoster('İndirme hatası', '#e74c3c');
+    }
   }
 
   async function kayitlariSil() {
