@@ -436,17 +436,20 @@
 <div class="sayfa" id="sayfa-raporlar">
   <div class="rapor-header">
     <h2>📊 Satış Raporları</h2>
-    <div class="rapor-filtre">
-      <select id="rapor-donem" onchange="raporRender()">
-        <option value="bugun">Bugün</option>
-        <option value="dun">Dün</option>
-        <option value="hafta">Bu Hafta</option>
-        <option value="ay">Bu Ay</option>
-        <option value="tumü">Tümü</option>
-      </select>
-      <input type="date" id="rapor-tarih" onchange="raporRender()" style="display:none">
-      <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()">
-      <button class="btn btn-iptal" style="flex:none;padding:8px 14px;font-size:12px" onclick="kayitlariSil()">🗑️ Kayıtları Sil</button>
+    <div class="rapor-filtre" style="flex-direction:column; align-items:flex-start; gap:12px; width: 100%;">
+      <div id="rapor-donem-butonlar" style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="menu-kat-btn aktif" onclick="donemSec(this, 'bugun')">Bugün</button>
+        <button class="menu-kat-btn" onclick="donemSec(this, 'dun')">Dün</button>
+        <button class="menu-kat-btn" onclick="donemSec(this, 'hafta')">Bu Hafta</button>
+        <button class="menu-kat-btn" onclick="donemSec(this, 'ay')">Bu Ay</button>
+        <button class="menu-kat-btn" onclick="donemSec(this, 'tumü')">Tümü</button>
+        <input type="hidden" id="rapor-donem" value="bugun">
+        <input type="date" id="rapor-tarih" onchange="raporRender()" style="display:none">
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; width: 100%;">
+        <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()">
+        <button class="btn btn-iptal" style="flex:none;padding:8px 14px;font-size:12px" onclick="kayitlariSil()">🗑️ Kayıtları Sil</button>
+      </div>
     </div>
   </div>
   <div id="rapor-icerik"></div>
@@ -1336,8 +1339,16 @@
               
               let kayitlar = kayitlariAl();
               const bugun = bugunTarih();
-              let dundenKalan = kayitlar.filter(k => k.tarih !== bugun);
-              let yeniKayitlar = dundenKalan.concat(yeniBugun);
+              
+              let firebaseTarihleri = new Set();
+              yeniBugun.forEach(k => { if (k && k.tarih) firebaseTarihleri.add(k.tarih); });
+              
+              if (yeniBugun.length === 0) {
+                  firebaseTarihleri.add(bugun);
+              }
+              
+              let korunacakKayitlar = kayitlar.filter(k => !firebaseTarihleri.has(k.tarih));
+              let yeniKayitlar = korunacakKayitlar.concat(yeniBugun);
               
               const suankiJson = JSON.stringify(kayitlar);
               const yeniJson = JSON.stringify(yeniKayitlar);
@@ -2219,6 +2230,12 @@
     if (el) el.classList.add('aktif');
     if (sayfa === 'raporlar') raporRender();
     if (sayfa === 'hizli') hizliSayfaRender();
+  }
+  function donemSec(btn, deger) {
+    document.querySelectorAll('#rapor-donem-butonlar .menu-kat-btn').forEach(b => b.classList.remove('aktif'));
+    btn.classList.add('aktif');
+    document.getElementById('rapor-donem').value = deger;
+    raporRender();
   }
 
   function raporRender() {
