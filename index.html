@@ -2008,11 +2008,11 @@
         <div class="odeme-secim-info" id="odeme-info">${kalan > 0 ? `Masada kalan: ${kalan}₺` : 'Tüm ürünler ödenecek'}</div>
       </div>
       <div class="sag-panel-alt">
-        <button class="btn btn-indirim" style="width: 100%; margin-bottom: 8px; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 8px;" onclick="indirimAc()">🏷️ İndirim Tanımla</button>
-        <div class="odeme-yontemleri" style="margin-bottom:0;">
+        <div class="odeme-yontemleri" style="margin-bottom:8px;">
           <button class="odeme-btn${seciliOdemeYontemi==='nakit'?' secili':''}" onclick="odemeYontemSec(this,'nakit')">💵 Nakit</button>
           <button class="odeme-btn${seciliOdemeYontemi==='kart'?' secili':''}" onclick="odemeYontemSec(this,'kart')">💳 Kart</button>
         </div>
+        <button class="btn btn-indirim" style="width: 100%; margin-bottom: 0; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 8px;" onclick="indirimAc()">🏷️ İndirim Tanımla</button>
       </div>
     `);
   }
