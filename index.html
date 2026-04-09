@@ -72,7 +72,7 @@
     .menu-alan { display: flex; flex: 1; overflow: hidden; border-bottom: 2px solid #334155; min-height: 0; }
 
     /* SOL — KATEGORİ SIDEBAR */
-    .kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; }
+    .kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; min-height: 0; }
     .kat-sidebar-btn { width: 100%; background: none; border: none; border-bottom: 1px solid #334155; color: #cbd5e1; padding: 13px 10px 13px 14px; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s; line-height: 1.3; }
     .kat-sidebar-btn:hover { background: #334155; color: #f97316; }
     .kat-sidebar-btn.aktif { background: #f97316; color: #fff; }
@@ -80,7 +80,7 @@
     .kat-ok { font-size: 10px; color: #64748b; flex-shrink: 0; margin-left: 4px; }
 
     /* SAĞ — ÜRÜN LİSTESİ */
-    .urun-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: #1e293b; }
+    .urun-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: #1e293b; min-height: 0; }
     .urun-satir { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid #334155; cursor: pointer; transition: background 0.15s; gap: 8px; flex-shrink: 0; }
     .urun-satir:hover { background: #0f172A; }
     .urun-satir:active { background: #475569; }
@@ -303,8 +303,8 @@
     /* ===== HIZLI SATIŞ SAYFASI ===== */
     #sayfa-hizli { flex-direction: row; }
     .hizli-menu { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-    .hizli-kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; }
-    .hizli-urun-panel { flex: 1; overflow-y: auto; background: #1e293b; }
+    .hizli-kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; min-height: 0; }
+    .hizli-urun-panel { flex: 1; overflow-y: auto; background: #1e293b; min-height: 0; }
     .hizli-ozet { width: 320px; flex-shrink: 0; background: #1e293b; border-left: 2px solid #334155; display: flex; flex-direction: column; overflow: hidden; }
     .hizli-ozet-baslik { padding: 13px 16px; background: #0f172A; font-size: 14px; font-weight: bold; color: #f97316; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
     .hizli-adisyon { flex: 1; overflow-y: auto; padding: 8px 14px; min-height: 0; }
