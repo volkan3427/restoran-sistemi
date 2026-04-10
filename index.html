@@ -3328,7 +3328,8 @@
       if (r.ok) {
         const fbMenu = await r.json();
         if (fbMenu && Object.keys(fbMenu).length > 0) {
-           // Local menu sýrasını korumak için
+           const eskiMenuStr = JSON.stringify(menu);
+           // Local menu sırasını korumak için
            const localKategoriler = Object.keys(menu);
            const fireKategoriler = Object.keys(fbMenu);
            let senkronGerekli = false;
@@ -3351,25 +3352,28 @@
                menuFirebaseSync();
            }
            
-           if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
-               hizliSayfaRender();
-           }
-           if (document.getElementById('menu-yonetim-modal') && document.getElementById('menu-yonetim-modal').classList.contains('aktif')) {
-               const aktifKatBtn = document.querySelector('.menu-kat-btn.aktif');
-               if (aktifKatBtn) {
-                   menuKatSec(aktifKatBtn.textContent);
-               } else {
-                   const ilkKat = Object.keys(menu)[0];
-                   if (ilkKat) menuKatSec(ilkKat);
+           const yeniMenuStr = JSON.stringify(menu);
+           if (eskiMenuStr !== yeniMenuStr) {
+               if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
+                   hizliSayfaRender();
                }
+               if (document.getElementById('menu-yonetim-modal') && document.getElementById('menu-yonetim-modal').classList.contains('aktif')) {
+                   const aktifKatBtn = document.querySelector('.menu-kat-btn.aktif');
+                   if (aktifKatBtn) {
+                       menuKatSec(aktifKatBtn.textContent);
+                   } else {
+                       const ilkKat = Object.keys(menu)[0];
+                       if (ilkKat) menuKatSec(ilkKat);
+                   }
+               }
+               
+               if (!menu[aktifKategori] && Object.keys(menu).length > 0) {
+                   let benzer = Object.keys(menu).find(k => k.trim() === (aktifKategori || '').trim());
+                   aktifKategori = benzer || Object.keys(menu)[0];
+               }
+               
+               if (typeof seciliMasa !== 'undefined' && seciliMasa) panelRender();
            }
-           
-           if (!menu[aktifKategori] && Object.keys(menu).length > 0) {
-               let benzer = Object.keys(menu).find(k => k.trim() === (aktifKategori || '').trim());
-               aktifKategori = benzer || Object.keys(menu)[0];
-           }
-           
-           if (typeof seciliMasa !== 'undefined' && seciliMasa) panelRender();
            
            return;
         }
