@@ -3331,14 +3331,24 @@
            // Local menu sýrasını korumak için
            const localKategoriler = Object.keys(menu);
            const fireKategoriler = Object.keys(fbMenu);
+           let senkronGerekli = false;
            for (const kat in menu) {
-             if (!fireKategoriler.includes(kat)) { delete menu[kat]; }
-           }
-           for (const kat of localKategoriler) {
-             if (fireKategoriler.includes(kat)) { menu[kat] = fbMenu[kat]; }
+             if (!fireKategoriler.includes(kat)) { 
+                 fbMenu[kat] = menu[kat];
+                 senkronGerekli = true;
+             }
            }
            for (const kat of fireKategoriler) {
-             if (!localKategoriler.includes(kat)) { menu[kat] = fbMenu[kat]; }
+               const yerelUrunler = menu[kat] || [];
+               const fbUrunler = fbMenu[kat] || [];
+               const fbUrunAdlari = fbUrunler.map(u => u.ad);
+               const eksikler = yerelUrunler.filter(u => !fbUrunAdlari.includes(u.ad));
+               
+               menu[kat] = [...fbUrunler, ...eksikler];
+               if (eksikler.length > 0) senkronGerekli = true;
+           }
+           if (senkronGerekli) {
+               menuFirebaseSync();
            }
            
            if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
