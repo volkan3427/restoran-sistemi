@@ -145,7 +145,7 @@
     .odeme-urun-item .ou-fiyat { font-size: 13px; font-weight: bold; color: #64748b; min-width: 60px; text-align: right; }
     .odeme-urun-item.secili .ou-fiyat { color: #f97316; }
     .ou-adet-ctrl { display: flex; align-items: center; gap: 5px; }
-    .ou-adet-ctrl button { background: #f1f5f9; border: none; color: #f8fafc; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 16px; font-weight: bold; }
+    .ou-adet-ctrl button { background: #475569; border: none; color: #f97316; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 16px; font-weight: bold; }
     .ou-adet-ctrl button:hover { background: #f97316; color: #fff; }
     .ou-adet-ctrl span { min-width: 22px; text-align: center; font-size: 14px; font-weight: bold; color: #f97316; }
     .tumu-sec-btn { width: 100%; padding: 8px; background: #0f172A; border: 1px dashed #f97316; border-radius: 6px; color: #f97316; font-size: 12px; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; font-weight: 600; }
@@ -1539,10 +1539,8 @@
               ${ekstraMetin ? `<div style="font-size:10px;color:#f97316;margin-top:2px;">+ ${ekstraMetin}</div>` : ''}
               ${beklemeAdet > 0 ? `<div style="font-size:10px;color:#f39c12;margin-top:2px;font-weight:bold;">${beklemeAdet} Adet Onay Bekliyor</div>` : ''}
             </div>
-            <div class="adet-ctrl">
-              <button onclick="adetDusur(${i})">−</button>
-              <span>${u.adet}</span>
-              <button onclick="adetArttir(${i})">+</button>
+            <div class="adet-ctrl" style="justify-content: flex-end; min-width: 45px;">
+              <span style="color:#f97316; font-weight:bold; font-size:12px;">${u.adet} Adet</span>
             </div>
             <div class="fiyat">${bp*u.adet}₺</div>
           </div>`;
