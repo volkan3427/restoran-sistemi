@@ -1592,7 +1592,7 @@
           ${indirim > 0 ? `<div class="toplam-satir" style="color:#ef4444;font-size:12px;"><span>İndirim</span><span>-${indirim}₺</span></div>
           <div class="toplam-satir"><span class="toplam-label" style="font-weight:bold;">Net Toplam</span><span class="toplam-deger" style="color:#22c55e;">${Math.max(0,toplam-indirim)}₺</span></div>` : ''}
           
-          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet</button>` : (JSON.stringify(masa.adisyon) !== JSON.stringify(window._seciliMasaYedekAdisyon || []) ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #e74c3c; border: 1px solid #c0392b; color: white; padding: 12px; font-size: 14px;" onclick="siparisiKaydet()">💾 Tablodan Silinenleri Onayla (Kaydet)</button>` : '')}
+          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet</button>` : ''}
           
           <div class="butonlar">
             ${(!yoneticiModu && !garsonIzinler.odemeAl) ? '' : `<button class="btn btn-kapat" onclick="odemeAc()">Ödeme Al</button>`}
