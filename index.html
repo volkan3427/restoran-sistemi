@@ -2398,6 +2398,41 @@
         </table>
       `;
 
+    // Günlük Ciro Tablosu
+    const gunlukCiroObj = {};
+    filtreli.forEach(k => {
+      if (!k.tarih) return;
+      if (!gunlukCiroObj[k.tarih]) gunlukCiroObj[k.tarih] = { tarih: k.tarih, nakit: 0, kart: 0, toplam: 0 };
+      if (k.odemeYontemi === 'nakit') gunlukCiroObj[k.tarih].nakit += (k.odenenToplam || 0);
+      else if (k.odemeYontemi === 'kart') gunlukCiroObj[k.tarih].kart += (k.odenenToplam || 0);
+      gunlukCiroObj[k.tarih].toplam += (k.odenenToplam || 0);
+    });
+    
+    const gunlukCiroList = Object.values(gunlukCiroObj).sort((a,b) => b.tarih.localeCompare(a.tarih));
+    const gunlukOzetHtml = gunlukCiroList.length === 0 ? '' : `
+      <div class="rapor-tablo-baslik" style="margin-top:24px">Gün Gün Ciro Özeti</div>
+      <table class="rapor-tablo">
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Nakit</th>
+            <th>Kart</th>
+            <th>Toplam</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${gunlukCiroList.map(g => `
+            <tr>
+              <td>${g.tarih}</td>
+              <td style="color:#d97706;font-weight:bold;">${g.nakit}₺</td>
+              <td style="color:#4338ca;font-weight:bold;">${g.kart}₺</td>
+              <td style="color:#22c55e;font-weight:bold;">${g.toplam}₺</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
     // Son işlemler
     const sonIslemler = [...filtreli].reverse().slice(0, 20);
     const islemHtml = sonIslemler.length === 0 ? '' : `
@@ -2416,7 +2451,7 @@
       </div>
     `;
 
-    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + islemHtml;
+    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + gunlukOzetHtml + islemHtml;
   }
 
   // ============ MENÜ YÖNETİMİ ============
