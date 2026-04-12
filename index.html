@@ -1259,18 +1259,7 @@
   function kayitlariAl() {
     try { 
         const hamKayitlar = JSON.parse(localStorage.getItem('restoran_kayitlar') || '[]'); 
-        const essiz = [];
-        const gorulen = new Set();
-        for (const k of hamKayitlar) {
-            if (!k) continue;
-            const urunSayisi = k.urunler ? k.urunler.length : 0;
-            const hash = k.tarih + '_' + k.saat + '_' + k.masaNo + '_' + k.odenenToplam + '_' + urunSayisi;
-            if (!gorulen.has(hash)) {
-                gorulen.add(hash);
-                essiz.push(k);
-            }
-        }
-        return essiz;
+        return hamKayitlar.filter(k => k && k.tarih);
     } catch(e) { return []; }
   }
 
