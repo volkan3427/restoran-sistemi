@@ -434,13 +434,14 @@
   <div class="rapor-header">
     <h2>📊 Satış Raporları</h2>
     <div class="rapor-filtre">
-      <select id="rapor-donem" onchange="raporRender()">
-        <option value="bugun">Bugün</option>
-        <option value="dun">Dün</option>
-        <option value="hafta">Bu Hafta</option>
-        <option value="ay">Bu Ay</option>
-        <option value="tumü">Tümü</option>
-      </select>
+      <input type="hidden" id="rapor-donem" value="bugun">
+      <div id="rapor-butonlar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; width: 100%;">
+        <button class="btn btn-onayla rapor-btn" id="r-btn-bugun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('bugun')">Bugün</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-dun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('dun')">Dün</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-oncekigun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('oncekigun')">Önceki Gün</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-hafta" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('hafta')">Bu Hafta</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-ay" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('ay')">Bu Ay</button>
+      </div>
       <input type="date" id="rapor-tarih" onchange="raporRender()" style="display:none">
       <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()">
       <button class="btn btn-iptal" style="flex:none;padding:8px 14px;font-size:12px" onclick="kayitlariSil()">🗑️ Kayıtları Sil</button>
@@ -2254,6 +2255,7 @@
       if (!k.tarih) return false;
       if (donem === 'bugun') return k.tarih === bugun;
       if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
+      if (donem === 'oncekigun') { const d = new Date(); d.setDate(d.getDate()-2); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
       if (donem === 'hafta') {
         const d = new Date(k.tarih);
         const haftaBaslangic = new Date(); haftaBaslangic.setDate(haftaBaslangic.getDate() - 6);
@@ -2265,6 +2267,17 @@
       }
       return true;
     });
+
+  function raporAyarla(val) {
+    document.getElementById('rapor-donem').value = val;
+    document.querySelectorAll('.rapor-btn').forEach(b => {
+      b.classList.remove('btn-onayla');
+      b.classList.add('btn-mavi');
+    });
+    document.getElementById('r-btn-' + val).classList.remove('btn-mavi');
+    document.getElementById('r-btn-' + val).classList.add('btn-onayla');
+    raporRender();
+  }
 
     // Ürün bazlı istatistik
     const urunIstatistik = {};
