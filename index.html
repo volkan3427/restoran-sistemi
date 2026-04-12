@@ -1354,8 +1354,25 @@
                   firebaseTarihleri.add(bugun);
               }
               
-              let korunacakKayitlar = kayitlar.filter(k => !firebaseTarihleri.has(k.tarih));
-              let yeniKayitlar = korunacakKayitlar.concat(yeniBugun);
+              let yerelBugun = kayitlar.filter(k => k.tarih === bugun);
+              
+              let korunacakKayitlar;
+              let yeniKayitlar;
+              
+              // EĞER sunucudaki kayıt sayısı bizim yerel bilgisayardaki kayıtlardan AZ ise (yani biz çevrimdışıyken işlem yaptıysak)
+              // Sunucuyu EZ ve YEREL verimizi koruyalım!
+              if (yeniBugun.length < yerelBugun.length && (Date.now() - (window._sonYedeklemeTarihi || 0) > 10000)) {
+                  korunacakKayitlar = kayitlar; 
+                  yeniKayitlar = kayitlar; // Yereldeki daha dolu, dokunma.
+                  // Sunucuya da doğrusunu yolla
+                  if (isAdmin || yoneticiModu) {
+                      firebaseGonder('v3_bugunKayitlar', yerelBugun);
+                  }
+              } else {
+                  // Sunucu daha güncel veya eşit
+                  korunacakKayitlar = kayitlar.filter(k => !firebaseTarihleri.has(k.tarih));
+                  yeniKayitlar = korunacakKayitlar.concat(yeniBugun);
+              }
               
               const suankiJson = JSON.stringify(kayitlar);
               const yeniJson = JSON.stringify(yeniKayitlar);
@@ -1378,10 +1395,19 @@
     if (!confirm('DİKKAT! Bu işlem şu an bu cihazda bulunan TÜM SATIŞ GEÇMİŞİNİ buluta yedekleyecektir. Doğru cihazda (Telefonda) olduğunuza emin misiniz?')) return;
     try {
         const kayitlar = kayitlariAl();
-        await firebaseGonder('v3_tumCihazGecmisYedek', kayitlar);
+        const r = await fetch(`${firebaseUrl}/v3_tumCihazGecmisYedek.json`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(kayitlar)
+        });
+        if (!r.ok) {
+            bildirimGoster('Bağlantı hatası: Sunucuya ulaşılamadı', '#dc2626');
+            return;
+        }
+        window._sonYedeklemeTarihi = Date.now();
         bildirimGoster('Geçmiş başarıyla buluta yedeklendi!', '#22c55e');
     } catch(e) {
-        bildirimGoster('Bağlantı hatası oluştu', '#e74c3c');
+        bildirimGoster('Bağlantı hatası veya İnternet yok', '#dc2626');
     }
   }
 
@@ -3527,10 +3553,31 @@
 
       if (yeniJson === mevcutJson) { _sonOrtakMasalarDegisikligi = yeniJson; return; }
       if (yeniJson !== mevcutJson && yeniJson !== _sonOrtakMasalarDegisikligi) {
-        // Not: Eskiden burada seciliMasa'yı koruyan bir kod bloğu vardı. 
-        // Bu blok, kapanmış masaların ekranı açıkken tekrar eski ürünlerle geri gelmesine sebep oluyordu, bu yüzden kaldırıldı.
+        
+        // EĞER ÇEVRİMDIŞI İŞLEM YAPILDIYSA MASALARI KORU
+        // Sunucu verisinde sildiğimiz veya boş olan masaları, eğer bizim lokalde doluysa EZME!
+        for (let no in masalar) {
+             const mLocal = masalar[no];
+             const mServer = data[no];
+             if (mLocal && mLocal.adisyon && mLocal.adisyon.length > 0) {
+                 // Benim masam dolu
+                 if (!mServer || !mServer.adisyon || mServer.adisyon.length < mLocal.adisyon.length) {
+                     // Sunucuda eksik veya boş, benim lokalimi koru ve sunucuya aktar!
+                     data[no] = mLocal;
+                     if (firebaseUrl) {
+                         firebaseGonder(`v3_ortak_masalar/${no}`, mLocal);
+                         const isDolu = mLocal.adisyon.length > 0;
+                         const top = mLocal.adisyon.reduce((s,u) => s + (u.fiyat + (u.ekstralar||[]).reduce((s,e)=>s+e.fiyat,0))*u.adet, 0);
+                         firebaseGonder(`v3_masaDurum/${no}`, {
+                             isim: mLocal.isim || `M${no}`, dolu: isDolu, toplam: top, acilisZamani: mLocal.acilisZamani
+                         });
+                     }
+                 }
+             }
+        }
+        
         masalar = data;
-        _sonOrtakMasalarDegisikligi = yeniJson;
+        _sonOrtakMasalarDegisikligi = JSON.stringify(masalar);
         
         // Sadece local'e kaydet (firebase'e geri basmayı önlemek için)
         try { localStorage.setItem('restoran_masalar', JSON.stringify(masalar)); } catch(e) {}
@@ -3715,20 +3762,28 @@
        let html = '';
        // Bekleyenleri bas
        for (const [id, cihaz] of Object.entries(bekleyenler)) {
+          const rawAd = (typeof cihaz === 'object' && cihaz !== null) ? cihaz.ad : ((typeof cihaz === 'string') ? cihaz : id);
+          const gercekAd = typeof rawAd === 'string' && rawAd !== 'undefined' ? rawAd : id;
+          
           html += `
              <div style="background:#272740; padding:8px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                <div>
-                  <div style="font-size:12px; font-weight:bold; color:#f39c12;">${cihaz.ad || id} (Bekliyor)</div>
-                  <div style="font-size:9px; color:#94a3b8;">ID: ${id}</div>
+                  <div style="font-size:12px; font-weight:bold; color:#ef4444;">${gercekAd}</div>
+                  <div style="font-size:9px; color:#f39c12;">ID: ${id}</div>
                </div>
-               <button class="btn btn-onayla" style="padding:4px 8px; font-size:10px;" onclick="cihazOnayla('${id}', '${cihaz.ad}')">✅ Onayla</button>
+               <div style="display:flex; gap:5px;">
+                 <button class="btn btn-iptal" style="padding:4px 8px; font-size:10px; background:#e11d48;" onclick="cihazReddet('${id}')">İzin Verme</button>
+                 <button class="btn btn-onayla" style="padding:4px 8px; font-size:10px;" onclick="cihazOnayla('${id}', '${gercekAd}')">✅ Onayla</button>
+               </div>
              </div>
           `;
        }
        // Onaylıları bas
        for (const [id, durum] of Object.entries(onaylilar)) {
           if (durum) {
-            const cihazAdiGoster = typeof durum === 'string' ? durum : 'Bilinmeyen Cihaz';
+            const rawGoster = (typeof durum === 'object' && durum.ad) ? durum.ad : (typeof durum === 'string' ? durum : id);
+            const cihazAdiGoster = typeof rawGoster === 'string' && rawGoster !== 'undefined' ? rawGoster : id;
+
             html += `
                <div style="background:#1d4ed820; border:1px solid #1d4ed8; padding:8px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
                  <div>
@@ -3750,6 +3805,14 @@
      try {
        await fetch(`${firebaseUrl}/v3_cihaz_onaylari/${id}.json`, { method:'PUT', body:JSON.stringify(ad || id) });
        // Bekleyenlerden sil
+       await fetch(`${firebaseUrl}/v3_cihaz_bekleyen/${id}.json`, { method:'DELETE' });
+       cihazlariYukleVeYonet();
+     } catch(e) { alert(e); }
+  }
+
+  async function cihazReddet(id) {
+     if (!firebaseUrl || !confirm("Bu cihazın sisteme dahil olma isteğini reddetmek istediğinize emin misiniz?")) return;
+     try {
        await fetch(`${firebaseUrl}/v3_cihaz_bekleyen/${id}.json`, { method:'DELETE' });
        cihazlariYukleVeYonet();
      } catch(e) { alert(e); }
@@ -3878,5 +3941,87 @@
   // Uygulama yüklendiğinde şifre ekranını Firebase üzerinden kontrol et
   cihazOnayKontrol();
 </script>
+
+<style>
+  #offline-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.95);
+    color: white;
+    z-index: 2147483647;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    backdrop-filter: blur(5px);
+  }
+  #offline-overlay.active {
+    display: flex;
+  }
+  #offline-overlay i {
+    font-size: 5rem;
+    color: #ef4444;
+    margin-bottom: 20px;
+  }
+  #offline-overlay h1 {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  #offline-overlay p {
+    font-size: 1.2rem;
+    color: #cbd5e1;
+    max-width: 80%;
+    line-height: 1.5;
+  }
+  #offline-overlay .spinner {
+    margin-top: 30px;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+<div id='offline-overlay'>
+  <div style='font-size: 5rem; margin-bottom: 20px;'>📶❌</div>
+  <h1>İnternet Bağlantısı Koptu!</h1>
+  <p>Veri kaybını önlemek için sistem geçici olarak durduruldu.<br>Lütfen internet bağlantınızın gelmesini bekleyin. Bağlantı geldiğinde sistem otomatik olarak aktifleşecektir.<br><br><strong style="color: #f87171; font-size: 1.8rem; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 8px; display: inline-block; border: 2px solid #ef4444;">📱 BURADA İNTERNET YOK, TELEFONUNDAN GİR!</strong></p>
+  <div class='spinner'></div>
+</div>
+<script>
+  (function() {
+    function updateOfflineStatus() {
+      const overlay = document.getElementById('offline-overlay');
+      if (navigator.onLine) {
+        overlay.classList.remove('active');
+      } else {
+        overlay.classList.add('active');
+        // İsteğe bağlı olarak açık olan modalları kapatabilir veya inputları blur edebiliriz.
+        if (document.activeElement) {
+          document.activeElement.blur();
+        }
+      }
+    }
+    window.addEventListener('online', updateOfflineStatus);
+    window.addEventListener('offline', updateOfflineStatus);
+    
+    // Check initially
+    if (!navigator.onLine) {
+      updateOfflineStatus();
+    }
+    
+    // Fallback polling (in case events are missed)
+    setInterval(updateOfflineStatus, 2000);
+  })();
+</script>
 </body>
+
 </html>
