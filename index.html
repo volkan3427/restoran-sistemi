@@ -2244,6 +2244,17 @@
     if (sayfa === 'hizli') hizliSayfaRender();
   }
 
+  function raporAyarla(val) {
+    document.getElementById('rapor-donem').value = val;
+    document.querySelectorAll('.rapor-btn').forEach(b => {
+      b.classList.remove('btn-onayla');
+      b.classList.add('btn-mavi');
+    });
+    document.getElementById('r-btn-' + val).classList.remove('btn-mavi');
+    document.getElementById('r-btn-' + val).classList.add('btn-onayla');
+    raporRender();
+  }
+
   function raporRender() {
     const donem = document.getElementById('rapor-donem').value;
     const aramaKelime = (document.getElementById('urun-ara').value || '').toLowerCase();
@@ -2267,17 +2278,6 @@
       }
       return true;
     });
-
-  function raporAyarla(val) {
-    document.getElementById('rapor-donem').value = val;
-    document.querySelectorAll('.rapor-btn').forEach(b => {
-      b.classList.remove('btn-onayla');
-      b.classList.add('btn-mavi');
-    });
-    document.getElementById('r-btn-' + val).classList.remove('btn-mavi');
-    document.getElementById('r-btn-' + val).classList.add('btn-onayla');
-    raporRender();
-  }
 
     // Ürün bazlı istatistik
     const urunIstatistik = {};
