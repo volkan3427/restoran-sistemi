@@ -1,28 +1,247 @@
-1471:           const yAdet = u.yazdirilanAdet || 0;
-1495:     const gonderilecekVarMi = masa.adisyon.some(u => u.adet > (u.yazdirilanAdet || 0));
-1625:       yeniUrun.yazdirilanAdet = 0;
-1660:       masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece});
-1683:       let yAdet = u.yazdirilanAdet || 0;
-1686:         siparisFisiYazdir(masaIsim, u.ad, u.ekstralar || [], yeniSiparisAdet);
-1687:         u.yazdirilanAdet = u.adet;
-1722:       if (u.adet < (u.yazdirilanAdet || 0)) {
-1723:         u.yazdirilanAdet = u.adet;
-1912:     paketFisiYazdir(hizliAdisyon, toplam, seciliOdemeYontemi);
-1973:     odemeFisiYazdir(masaIsim, fisUrunler, tamToplam, indirimTutar, odenenToplam, seciliOdemeYontemi);
-2657:     siparisFisiYazdir('PAKET', ad, ekstralar, 1);
-2889:   let yaziciFisYazdir = true;
-2897:         if (d.fisYazdir !== undefined) yaziciFisYazdir = d.fisYazdir;
-2905:         otoPrint: yaziciOtoPrint, fisYazdir: yaziciFisYazdir
-2948:                 <input type="checkbox" id="yazici-fis" ${yaziciFisYazdir ? 'checked' : ''} onchange="yaziciFisYazdir=this.checked;yaziciAyarKaydet()">
-2954:           <button class="btn btn-mavi" style="width:100%;margin-top:14px;" onclick="yaziciTestYazdir()">🧪 Ajanı Test Et</button>
-2962:   // ===== ANA YAZDIRMA FONKSİYONLARI =====
-2963:   async function siparisFisiYazdir(masaIsim, urunAd, ekstralar, adet) {
-2971:   async function odemeFisiYazdir(masaIsim, urunler, toplam, indirim, netToplam, odemeYontemi) {
-2972:     if (!yaziciFisYazdir || !firebaseUrl) return;
-2979:   async function paketFisiYazdir(urunler, toplam, odemeYontemi) {
-2980:     if (!yaziciFisYazdir || !firebaseUrl) return;
-2987:   async function yaziciTestYazdir() {
-3101:       siparisFisiYazdir(masaIsim, u.ad, u.ekstralar||[], u.adet||1);
-3131:           await siparisFisiYazdir(...job.args);
-3133:           await odemeFisiYazdir(...job.args);
-3135:           await paketFisiYazdir(...job.args);
+async function siparisFisiYazdir(masaIsim, urunAd, ekstralar, adet) {
+
+
+    if (!yaziciOtoPrint || !firebaseUrl) return;
+
+
+    firebaseGonder('yaziciKuyrugu/' + Date.now() + Math.floor(Math.random()*1000), {
+
+
+      tip: 'mutfak',
+
+
+      args: [masaIsim, urunAd, ekstralar, adet]
+
+
+    });
+
+
+  }
+
+
+
+
+
+  async function odemeFisiYazdir(masaIsim, urunler, toplam, indirim, netToplam, odemeYontemi) {
+
+
+    if (!yaziciFisYazdir || !firebaseUrl) return;
+
+
+    firebaseGonder('yaziciKuyrugu/' + Date.now() + Math.floor(Math.random()*1000), {
+
+
+      tip: 'odeme',
+
+
+      args: [masaIsim, urunler, toplam, indirim, netToplam, odemeYontemi]
+
+
+    });
+
+
+  }
+
+
+
+
+
+  async function paketFisiYazdir(urunler, toplam, odemeYontemi) {
+
+
+    if (!yaziciFisYazdir || !firebaseUrl) return;
+
+
+    firebaseGonder('yaziciKuyrugu/' + Date.now() + Math.floor(Math.random()*1000), {
+
+
+      tip: 'paket',
+
+
+      args: [urunler, toplam, odemeYontemi]
+
+
+    });
+
+
+  }
+
+
+
+
+
+  async function yaziciTestYazdir() {
+
+
+    if (!firebaseUrl) return;
+
+
+    firebaseGonder('yaziciKuyrugu/' + Date.now() + Math.floor(Math.random()*1000), {
+
+
+      tip: 'mutfak',
+
+
+      args: ['Test Masası', 'Yazıcı Testi', [], 1]
+
+
+    });
+
+
+    bildirimGoster('Test komutu ana kasaya (C#) gönderildi!', '#3b82f6');
+
+
+  }
+
+
+
+
+
+  // ============ GARSON MOBİL SİPARİŞ DİNLEYİCİ ============
+
+
+  // Menüyü Firebase'e gönder (garson telefonu buradan okuyacak)
+
+
+  function menuFirebaseSync() {
+
+
+    if (!firebaseUrl) return;
+
+
+    firebaseGonder('menu', menu);
+
+
+    firebaseGonder('extraGruplari', extraGruplari);
+
+
+    firebaseGonder('ekstraKategoriler', ekstraKategoriler);
+
+
+    firebaseGonder('masaListesi', masaNoları.map(no => ({
+
+
+      no, isim: masalar[no]?.isim || `M${no}`
+
+
+    })));
+
+
+  }
+
+
+
+
+
+  // Sayfa açıldığında hardcoded menu Firebase'i ezmesin diye fotoğrafları birleştirir
+
+
+  async function menuYukleVeBirlestir() {
+
+
+    if (!firebaseUrl) return;
+
+
+    try {
+
+
+      const r = await fetch(`${firebaseUrl}/menu.json`);
+
+
+      if (r.ok) {
+
+
+        const fbMenu = await r.json();
+
+
+        if (fbMenu && Object.keys(fbMenu).length > 0) {
+
+
+           const eskiMenuStr = JSON.stringify(menu);
+
+
+           // Local menu sırasını korumak için
+
+
+           const localKategoriler = Object.keys(menu);
+
+
+           const fireKategoriler = Object.keys(fbMenu);
+
+
+           let senkronGerekli = false;
+
+
+           for (const kat in menu) {
+
+
+             if (!fireKategoriler.includes(kat)) { 
+
+
+                 fbMenu[kat] = menu[kat];
+
+
+                 senkronGerekli = true;
+
+
+             }
+
+
+           }
+
+
+           for (const kat of fireKategoriler) {
+
+
+               const yerelUrunler = menu[kat] || [];
+
+
+               const fbUrunler = fbMenu[kat] || [];
+
+
+               const fbUrunAdlari = fbUrunler.map(u => u.ad);
+
+
+               const eksikler = yerelUrunler.filter(u => !fbUrunAdlari.includes(u.ad));
+
+
+               
+
+
+               menu[kat] = [...fbUrunler, ...eksikler];
+
+
+               if (eksikler.length > 0) senkronGerekli = true;
+
+
+           }
+
+
+           if (senkronGerekli) {
+
+
+               menuFirebaseSync();
+
+
+           }
+
+
+           
+
+
+           const yeniMenuStr = JSON.stringify(menu);
+
+
+           if (eskiMenuStr !== yeniMenuStr) {
+
+
+               if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
+
+
+                   hizliSayfaRender();
+
+
+               }
+
+
+               if (document.getElementById('menu-y
