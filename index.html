@@ -379,6 +379,7 @@
   </style>
 </head>
 <body>
+<div id="internet-durum" style="display:none; position:fixed; top:0; left:0; width:100%; background:#ef4444; color:#fff; text-align:center; padding:10px; font-size:14px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.3);">⚠️ İNTERNET BAĞLANTISI KOPTU! Şuan çevrimdışı çalışıyorsunuz, veriler kaydediliyor ancak diğer cihazlarla eşitlenmiyor.</div>
 
 <!-- SİSTEM GİRİŞ EKRANI -->
 <div id="ana-giris-ekrani" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #334155, #f97316);z-index:99999;align-items:center;justify-content:center;flex-direction:column;color:#fff;">
@@ -3466,7 +3467,7 @@
       siparisFisiYazdir(masaIsim, u.ad, u.ekstralar||[], u.adet||1);
     });
 
-    masalariKaydet();
+    masalariKaydet(masaNo);
     masaRender();
     if (seciliMasa === masaNo) panelRender();
 
