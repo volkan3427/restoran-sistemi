@@ -360,18 +360,19 @@
         position: fixed !important;
         top: 0 !important; 
         bottom: 0 !important; 
-        right: -100% !important; 
+        right: 0 !important; 
         width: 35vw !important; 
         min-width: 250px;
         left: auto !important; 
         height: 100% !important;
         border-top: none; 
         border-left: 2px solid #f97316;
-        transition: right 0.25s cubic-bezier(.4,0,.2,1) !important;
+        transform: translateX(110%) !important;
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1) !important;
         z-index: 10000 !important; 
         box-shadow: -4px 0 25px rgba(0,0,0,0.5);
       }
-      .sag-panel.acik { right: 0 !important; }
+      .sag-panel.acik { transform: translateX(0) !important; }
       .sag-panel-kap.panel-acik { padding-right: 0; }
       .sag-panel-alt { padding-bottom: 110px !important; }
     }
