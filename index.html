@@ -3557,10 +3557,25 @@
 
       if (yeniJson === mevcutJson) { _sonOrtakMasalarDegisikligi = yeniJson; return; }
       if (yeniJson !== mevcutJson && yeniJson !== _sonOrtakMasalarDegisikligi) {
-        // Not: Eskiden burada seciliMasa'yı koruyan bir kod bloğu vardı. 
-        // Bu blok, kapanmış masaların ekranı açıkken tekrar eski ürünlerle geri gelmesine sebep oluyordu, bu yüzden kaldırıldı.
+        // Eğer şu an bir masa açıksa ve o masada henüz gönderilmemiş (lokalde eklenmiş) siparişler varsa ezdirmeyelim.
+        let seciliMasayiKoru = false;
+        if (seciliMasa && window._seciliMasaYedekAdisyon) {
+            const currentAdisyonStr = JSON.stringify(masalar[seciliMasa].adisyon || []);
+            const yedekAdisyonStr = JSON.stringify(window._seciliMasaYedekAdisyon);
+            if (currentAdisyonStr !== yedekAdisyonStr) {
+                seciliMasayiKoru = true;
+            }
+        }
+
+        if (seciliMasayiKoru) {
+            data[seciliMasa] = masalar[seciliMasa]; // Lokal değişiklikleri (eklenip gönderilmeyenleri) koru
+        } else if (seciliMasa && data[seciliMasa]) {
+            // Sadece izliyorsa referansı da güncelleyelim.
+            window._seciliMasaYedekAdisyon = JSON.parse(JSON.stringify(data[seciliMasa].adisyon || []));
+        }
+
         masalar = data;
-        _sonOrtakMasalarDegisikligi = yeniJson;
+        _sonOrtakMasalarDegisikligi = JSON.stringify(masalar);
         
         // Sadece local'e kaydet (firebase'e geri basmayı önlemek için)
         try { localStorage.setItem('restoran_masalar', JSON.stringify(masalar)); } catch(e) {}
