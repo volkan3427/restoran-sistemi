@@ -2327,6 +2327,11 @@
     const toplamCiro = filtreli.reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const nakitCirosu = filtreli.filter(k => k.odemeYontemi === 'nakit').reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const kartCirosu = filtreli.filter(k => k.odemeYontemi === 'kart').reduce((s, k) => s + (k.odenenToplam || 0), 0);
+    const toplamIndirim = filtreli.reduce((s, k) => {
+      const gTop = k.toplam ? k.toplam : (k.odenenToplam || 0);
+      let ind = gTop - (k.odenenToplam || 0);
+      return s + (ind > 0 ? ind : 0);
+    }, 0);
     
     let geceCirosu = 0;
     filtreli.forEach(k => {
@@ -2383,6 +2388,10 @@
         <div class="ozet-kutu" style="background:#e0e7ff; box-shadow:0 2px 8px rgba(99,102,241,0.4);">
           <div class="oz-label" style="color:#4338ca;">💳 Kart Geliri</div>
           <div class="oz-deger" style="color:#4338ca;">${kartCirosu}₺</div>
+        </div>
+        <div class="ozet-kutu" style="background:#fce7f3; box-shadow:0 2px 8px rgba(219,39,119,0.4);">
+          <div class="oz-label" style="color:#db2777;">📉 Yapılan İndirim</div>
+          <div class="oz-deger" style="color:#db2777;">${toplamIndirim}₺</div>
         </div>
         <div class="ozet-kutu" style="background:#8b5cf6; box-shadow:0 2px 8px rgba(139,92,246,0.4);">
           <div class="oz-label">Gece (00:00-08:00)</div>
@@ -2450,6 +2459,10 @@
     });
     
     const gunlukCiroList = Object.values(gunlukCiroObj).sort((a,b) => b.tarih.localeCompare(a.tarih));
+    const gunlukNakitTop = gunlukCiroList.reduce((s,g) => s + g.nakit, 0);
+    const gunlukKartTop = gunlukCiroList.reduce((s,g) => s + g.kart, 0);
+    const gunlukToplamTop = gunlukCiroList.reduce((s,g) => s + g.toplam, 0);
+
     const gunlukOzetHtml = gunlukCiroList.length === 0 ? '' : `
       <div class="rapor-tablo-baslik" style="margin-top:24px">Gün Gün Ciro Özeti</div>
       <table class="rapor-tablo">
@@ -2471,6 +2484,14 @@
             </tr>
           `).join('')}
         </tbody>
+        <tfoot>
+          <tr style="background: rgba(255,255,255,0.05); font-weight: bold;">
+            <td style="color:#f8fafc;">TOPLAM</td>
+            <td style="color:#d97706;">${gunlukNakitTop}₺</td>
+            <td style="color:#4338ca;">${gunlukKartTop}₺</td>
+            <td style="color:#22c55e; font-size:15px;">${gunlukToplamTop}₺</td>
+          </tr>
+        </tfoot>
       </table>
     `;
 
