@@ -469,7 +469,11 @@
       </div>
       <input type="date" id="rapor-tarih" onchange="raporRender()" style="display:none">
       <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()">
-      <button class="btn btn-iptal" style="flex:none;padding:8px 14px;font-size:12px" onclick="kayitlariSil()">🗑️ Kayıtları Sil</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-iptal" style="flex:1;padding:8px 10px;font-size:12px" onclick="kayitlariSil()">🗑️ Sil</button>
+        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#8b5cf6;border:none;" onclick="gecmisiBulutaYedekle()">☁️ Yedekle</button>
+        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#3b82f6;border:none;" onclick="gecmisiBuluttanIndir()">📥 İndir</button>
+      </div>
     </div>
   </div>
   <div id="rapor-icerik"></div>
@@ -1385,6 +1389,52 @@
       
       await _senkronizePromise;
       _senkronizePromise = null;
+  }
+
+  async function gecmisiBulutaYedekle() {
+    if (!firebaseUrl) { bildirimGoster('Firebase url eksik!', '#dc2626'); return; }
+    if (!confirm('Tüm geçmiş raporlarınız buluta yüklenecek ve orada asılı kalacak. (İşlem bitene kadar bekleyin) Onaylıyor musunuz?')) return;
+    try {
+      bildirimGoster('Buluta yükleniyor...', '#f97316');
+      const kayitlar = kayitlariAl();
+      await firebaseGonder('v3_gecmisYedek', kayitlar);
+      bildirimGoster('Geçmiş başarıyla buluta kopyalandı!', '#22c55e');
+    } catch(e) {
+      bildirimGoster('Yükleme hatası: ' + e.message, '#dc2626');
+    }
+  }
+
+  async function gecmisiBuluttanIndir() {
+    if (!firebaseUrl) { bildirimGoster('Firebase url eksik!', '#dc2626'); return; }
+    if (!confirm('Buluttaki geçmiş yedek indirilecek ve bu cihazdaki verilerle birleştirilecek. Cihazındaki hiçbir silinmeyecek. Emin misin?')) return;
+    try {
+      bildirimGoster('Yedek indiriliyor...', '#f97316');
+      const r = await fetch(`${firebaseUrl}/v3_gecmisYedek.json?_t=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) throw new Error('Ağ hatası');
+      const data = await r.json();
+      if (!data) { bildirimGoster('Bulutta önceden alınmış bir yedek bulunamadı!', '#f39c12'); return; }
+      
+      let buluttanKayitlar = Array.isArray(data) ? data : Object.values(data);
+      let mevcutKayitlar = kayitlariAl();
+      
+      let butunKayitlar = [...mevcutKayitlar];
+      let varOlanStringler = new Set(butunKayitlar.map(k => JSON.stringify(k)));
+      
+      let eklenenAdet = 0;
+      for (let k of buluttanKayitlar) {
+          if (k && !varOlanStringler.has(JSON.stringify(k))) {
+              butunKayitlar.push(k);
+              eklenenAdet++;
+          }
+      }
+      
+      localStorage.setItem('restoran_kayitlar', JSON.stringify(butunKayitlar));
+      raporRender();
+      masaRender();
+      bildirimGoster(`Tamamlandı! ${eklenenAdet} cihazda olmayan kayıt bulundu ve indirildi.`, '#22c55e');
+    } catch(e) {
+      bildirimGoster('İndirme hatası: ' + e.message, '#dc2626');
+    }
   }
 
   async function kayitlariSil() {
