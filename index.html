@@ -1544,7 +1544,7 @@
 
     const adisyonlar = masa.adisyon.length === 0
       ? `<div class="bos-adisyon">Henüz sipariş yok</div>`
-      : masa.adisyon.map((u,i) => {
+      : masa.adisyon.map((u, i) => ({u, i})).reverse().map(({u, i}) => {
           const bp = birimFiyat(u);
           const ekstraMetin = (u.ekstralar||[]).map(e=>e.ad).join(', ');
           const yAdet = u.yazdirilanAdet || 0;
@@ -1552,7 +1552,7 @@
           const stil = beklemeAdet > 0 ? 'border-left: 4px solid #f39c12; background: rgba(243,156,18,0.1);' : '';
           return `<div class="adisyon-item" style="${stil}">
             <div class="urun-adi">
-              ${u.ad}
+              ${u.ad}${u.eklenmeZamani ? ` <span style="font-size:10px; color:#94a3b8; font-weight:normal; margin-left:5px;">🕒 ${u.eklenmeZamani}</span>` : ''}
               ${ekstraMetin ? `<div style="font-size:10px;color:#f97316;margin-top:2px;">+ ${ekstraMetin}</div>` : ''}
               ${beklemeAdet > 0 ? `<div style="font-size:10px;color:#f39c12;margin-top:2px;font-weight:bold;">${beklemeAdet} Adet Onay Bekliyor</div>` : ''}
             </div>
@@ -1753,9 +1753,10 @@
     );
     if (mevcutIndex !== -1) {
       masa.adisyon[mevcutIndex].adet++;
+      masa.adisyon[mevcutIndex].eklenmeZamani = saatFormatla(new Date());
       sonDuzenlenenIndex = mevcutIndex;
     } else {
-      masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece, kategori: aktifMenuKat});
+      masa.adisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], yazdirilanAdet: 0, isGece, kategori: aktifMenuKat, eklenmeZamani: saatFormatla(new Date())});
       sonDuzenlenenIndex = masa.adisyon.length - 1;
     }
     sonDuzenlenenMasa = seciliMasa;
@@ -2992,9 +2993,10 @@
     
     if (mevcutIndex !== -1) {
       hizliAdisyon[mevcutIndex].adet++;
+      hizliAdisyon[mevcutIndex].eklenmeZamani = saatFormatla(new Date());
       hizliSonDuzenlenenIndex = mevcutIndex;
     } else {
-      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], isGece, kategori: typeof hizliAktifKat !== 'undefined' ? hizliAktifKat : null, yazdirilanAdet: 0});
+      hizliAdisyon.push({ad, fiyat, adet:1, ekstralar: ekstralar||[], isGece, kategori: typeof hizliAktifKat !== 'undefined' ? hizliAktifKat : null, yazdirilanAdet: 0, eklenmeZamani: saatFormatla(new Date())});
       hizliSonDuzenlenenIndex = hizliAdisyon.length - 1;
     }
     
@@ -3033,12 +3035,12 @@
       return;
     }
     const toplam = hizliAdisyon.reduce((s,u) => s + birimFiyat(u)*u.adet, 0);
-    el.innerHTML = hizliAdisyon.map((u,i) => {
+    el.innerHTML = hizliAdisyon.map((u, i) => ({u, i})).reverse().map(({u, i}) => {
       const bp = birimFiyat(u);
       const ekstraMetin = (u.ekstralar||[]).map(e=>e.ad).join(', ');
       return `<div class="adisyon-item">
         <div class="urun-adi">
-          ${u.ad}
+          ${u.ad}${u.eklenmeZamani ? ` <span style="font-size:10px; color:#94a3b8; font-weight:normal; margin-left:5px;">🕒 ${u.eklenmeZamani}</span>` : ''}
           ${ekstraMetin ? `<div style="font-size:10px;color:#f97316;margin-top:2px;">+ ${ekstraMetin}</div>` : ''}
         </div>
         <div class="adet-ctrl">
