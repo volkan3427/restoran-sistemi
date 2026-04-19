@@ -2590,7 +2590,7 @@
       const iptalFiltreli = iptaller.filter(k => {
         if (!k.tarih) return false;
         if (donem === 'bugun') return k.tarih === bugun;
-        if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = \`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,'0')}-\${String(d.getDate()).padStart(2,'0')}\`; return k.tarih === dd; }
+        if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
         if (donem === 'hafta') { const d = new Date(k.tarih); const h = new Date(); h.setDate(h.getDate()-6); return d >= h; }
         if (donem === 'ay') return k.tarih.startsWith(bugun.substring(0, 7));
         return true;
