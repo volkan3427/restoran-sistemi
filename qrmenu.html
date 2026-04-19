@@ -244,6 +244,7 @@
         await Promise.all([
           fetch(`${firebaseUrl}/menu.json`).then(r => r.json()).then(d => menuData = d),
           fetch(`${firebaseUrl}/ekstraKategoriler.json`).then(r => r.json()).then(d => extraData = d),
+          fetch(`${firebaseUrl}/menuSiralamasi.json`).then(r => r.json()).catch(e=>[]).then(d => window.siralamaArray = d),
           fetch(`${firebaseUrl}/extraGruplari.json`).then(r => r.json()).then(d => extraGrupData = d),
           fetch(`${firebaseUrl}/mekanIsim.json`).then(r => r.json()).then(d => {
              if(d) {
@@ -280,7 +281,7 @@
       container.innerHTML = '';
 
       // Kategorileri bul ve sırala
-      const siralama = [
+      const siralama = (window.siralamaArray && Array.isArray(window.siralamaArray) && window.siralamaArray.length > 0) ? window.siralamaArray : [
         'SICAK KAHVELER', 'SOĞUK KAHVELER', 'MATCHA', 'ÇAYLAR',
         'SOĞUK İÇECEKLER', 'SICAK İÇECEKLER', 'TATLILAR', 'SANDVİÇLER', 'Ekstralar'
       ];

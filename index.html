@@ -1120,7 +1120,7 @@
   function masaNoKaydet() {
     try { localStorage.setItem('restoran_masa_nolari', JSON.stringify(masaNoları)); } catch(e) {}
     if (firebaseUrl) firebaseGonder('v3_masa_nolari', masaNoları);
-    menuFirebaseSync();
+    masaListesiFirebaseSync();
   }
 
   let seciliMasa = null;
@@ -1876,9 +1876,24 @@
     masaRender(); panelRender();
   }
 
+  
+  function iptalKayitLogla(masaIsim, uAd, miktar) {
+    const iptallerStr = localStorage.getItem('restoran_iptaller');
+    let iptaller = [];
+    if (iptallerStr) {
+       try { iptaller = JSON.parse(iptallerStr); } catch(e){}
+    }
+    const now = new Date();
+    const tarih = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    iptaller.push({ tarih, saat, masaIsim, urunAd: uAd, miktar });
+    localStorage.setItem('restoran_iptaller', JSON.stringify(iptaller));
+  }
+
   function adetDusur(i) {
     const masa = masalar[seciliMasa];
     const u = masa.adisyon[i];
+    iptalKayitLogla(masa.isim || ("Masa "+seciliMasa), u.ad, 1);
     if (u.adet > 1) {
       u.adet--;
       if (u.adet < (u.yazdirilanAdet || 0)) {
@@ -2235,7 +2250,7 @@
     const now = new Date();
     const tarih = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    kayitEkle({ tarih, saat, masaNo: seciliMasa, urunler: seciliUrunler, odenenToplam, odemeYontemi: seciliOdemeYontemi });
+    kayitEkle({ tarih, saat, masaNo: seciliMasa, urunler: seciliUrunler, odenenToplam, indirim: indirimTutar, tamToplam, odemeYontemi: seciliOdemeYontemi });
 
     // Masayı güncelle
     masalar[seciliMasa].adisyon = kalanUrunler;
@@ -2335,6 +2350,13 @@
     raporRender();
   }
 
+  
+  window._islemFiltre = window._islemFiltre || 'yeni';
+  window.islemFiltreDegisti = function(val) {
+      window._islemFiltre = val;
+      raporRender();
+  };
+
   function raporRender() {
     const donem = document.getElementById('rapor-donem').value;
     const aramaKelime = (document.getElementById('urun-ara').value || '').toLowerCase();
@@ -2378,8 +2400,9 @@
     const nakitCirosu = filtreli.filter(k => k.odemeYontemi === 'nakit').reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const kartCirosu = filtreli.filter(k => k.odemeYontemi === 'kart').reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const toplamIndirim = filtreli.reduce((s, k) => {
-      const gTop = k.toplam ? k.toplam : (k.odenenToplam || 0);
-      let ind = gTop - (k.odenenToplam || 0);
+      let ind = (k.indirim !== undefined) ? k.indirim : 0;
+      if (ind === 0 && k.tamToplam) ind = k.tamToplam - (k.odenenToplam || 0);
+      else if (ind === 0 && k.toplam) ind = k.toplam - (k.odenenToplam || 0);
       return s + (ind > 0 ? ind : 0);
     }, 0);
     
@@ -2394,7 +2417,7 @@
         } else if (typeof menu !== 'undefined') {
           const tatliKatlari = Object.keys(menu).filter(k => k.toLowerCase().includes('tatl'));
           for (let kat of tatliKatlari) {
-            if (menu[kat].some(t => t.ad === u.ad)) isTatli = true;
+            if (menu[kat] && menu[kat].some(t => t.ad === u.ad)) isTatli = true;
           }
         }
         if (u.isGece && !isTatli) {
@@ -2441,7 +2464,7 @@
         </div>
         <div class="ozet-kutu" style="background:#fce7f3; box-shadow:0 2px 8px rgba(219,39,119,0.4);">
           <div class="oz-label" style="color:#db2777;">📉 Yapılan İndirim</div>
-          <div class="oz-deger" style="color:#db2777;">${toplamIndirim}₺</div>
+          <div class="oz-deger" style="color:#db2777;">${isNaN(toplamIndirim) ? 0 : toplamIndirim}₺</div>
         </div>
         <div class="ozet-kutu" style="background:#8b5cf6; box-shadow:0 2px 8px rgba(139,92,246,0.4);">
           <div class="oz-label">Gece (00:00-08:00)</div>
@@ -2545,26 +2568,82 @@
       </table>
     `;
 
-    // Son işlemler
-    const sonIslemler = [...filtreli].reverse().slice(0, 20);
-    const islemHtml = sonIslemler.length === 0 ? '' : `
-      <div class="islem-listesi">
-        <div class="rapor-tablo-baslik" style="margin-top:24px">Son İşlemler</div>
-        ${sonIslemler.map(k => `
-          <div class="islem-item">
-            <div class="islem-baslik">
-              <span class="masa-isim">Masa ${k.masaNo}</span>
-              <span class="islem-tarih">${k.tarih} ${k.saat} · ${k.odemeYontemi==='nakit'?'💵 Nakit':'💳 Kart'}</span>
-              <span class="islem-tutar">${k.odenenToplam}₺</span>
-            </div>
-            <div class="islem-urunler">${(k.urunler||[]).map(u => `${u.ad} x${u.adet}`).join(', ')}</div>
-          </div>
-        `).join('')}
-      </div>
+    // Filtre HTML dropdown
+    const selectHtml = `
+      <select onchange="window.islemFiltreDegisti(this.value)" style="padding:6px; font-size:13px; background:#1e293b; color:white; border:1px solid #475569; border-radius:6px; cursor:pointer; outline:none;">
+          <option value="yeni" ${window._islemFiltre==='yeni'?'selected':''}>Yeniden Eskiye (Tam liste)</option>
+          <option value="eski" ${window._islemFiltre==='eski'?'selected':''}>Eskiden Yeniye</option>
+          <option value="yuksek_odeme" ${window._islemFiltre==='yuksek_odeme'?'selected':''}>En Yüksek Ödemeler</option>
+          <option value="az_odeme" ${window._islemFiltre==='az_odeme'?'selected':''}>En Az Ödemeler</option>
+          <option value="yuksek_indirim" ${window._islemFiltre==='yuksek_indirim'?'selected':''}>En Fazla İndirim Alanlar</option>
+          <option value="iptaller" ${window._islemFiltre==='iptaller'?'selected':''}>🚨 Silinen/İptal Edilen Ürünler</option>
+      </select>
     `;
+
+    let islemHtml = '';
+
+    if (window._islemFiltre === 'iptaller') {
+      const iptalStr = localStorage.getItem('restoran_iptaller');
+      let iptaller = [];
+      if (iptalStr) { try { iptaller = JSON.parse(iptalStr); } catch(e){} }
+      
+      const iptalFiltreli = iptaller.filter(k => {
+        if (!k.tarih) return false;
+        if (donem === 'bugun') return k.tarih === bugun;
+        if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = \`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,'0')}-\${String(d.getDate()).padStart(2,'0')}\`; return k.tarih === dd; }
+        if (donem === 'hafta') { const d = new Date(k.tarih); const h = new Date(); h.setDate(h.getDate()-6); return d >= h; }
+        if (donem === 'ay') return k.tarih.startsWith(bugun.substring(0, 7));
+        return true;
+      }).reverse();
+
+      islemHtml = `
+        <div class="islem-listesi" style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
+              <div class="rapor-tablo-baslik" style="margin:0;">İptal/Silinen Logları</div>
+              ${selectHtml}
+          </div>
+          ${iptalFiltreli.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde iptal kaydı yok</div>' : iptalFiltreli.map(k => `
+            <div class="islem-item" style="border-left: 4px solid #ef4444;">
+              <div class="islem-baslik">
+                <span class="masa-isim" style="color:#ef4444;">${k.masaIsim}</span>
+                <span class="islem-tarih">${k.tarih} ${k.saat}</span>
+              </div>
+              <div class="islem-urunler" style="color:#fca5a5;">🗑️ ${k.urunAd} x${k.miktar} ürün masadan çıkarıldı</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      let islemSirali = [...filtreli];
+      if (window._islemFiltre === 'yeni') islemSirali = islemSirali.reverse();
+      else if (window._islemFiltre === 'eski') islemSirali = islemSirali; // zaten eskiden yeniye sirali array
+      else if (window._islemFiltre === 'yuksek_odeme') islemSirali = islemSirali.sort((a,b) => (b.odenenToplam||0) - (a.odenenToplam||0));
+      else if (window._islemFiltre === 'az_odeme') islemSirali = islemSirali.sort((a,b) => (a.odenenToplam||0) - (b.odenenToplam||0));
+      else if (window._islemFiltre === 'yuksek_indirim') islemSirali = islemSirali.sort((a,b) => (b.indirim||0) - (a.indirim||0));
+
+      islemHtml = `
+        <div class="islem-listesi" style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
+              <div class="rapor-tablo-baslik" style="margin:0;">Kapanan Tüm Adisyonlar</div>
+              ${selectHtml}
+          </div>
+          ${islemSirali.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : islemSirali.map(k => `
+            <div class="islem-item">
+              <div class="islem-baslik">
+                <span class="masa-isim">Masa ${k.masaNo} ${k.indirim ? '<span style="font-size:10px;color:#db2777;border:1px solid #db2777;padding:1px 4px;border-radius:4px;margin-left:4px;">İndirim '+k.indirim+'₺</span>' : ''}</span>
+                <span class="islem-tarih">${k.tarih} ${k.saat} · ${k.odemeYontemi==='nakit'?'💵 Nakit':'💳 Kart'}</span>
+                <span class="islem-tutar" style="font-size:16px;">${k.odenenToplam}₺</span>
+              </div>
+              <div class="islem-urunler">${(k.urunler||[]).map(u => `${u.ad} x${u.adet}`).join(', ')}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
 
     document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + gunlukOzetHtml + islemHtml;
   }
+
 
   // ============ MENÜ YÖNETİMİ ============
   let aktifMenuKat = null;
@@ -2645,7 +2724,7 @@
 
   function menuUrunEkle() {
     const ad = document.getElementById('yeni-urun-ad').value.trim();
-    const fiyat = parseInt(document.getElementById('yeni-urun-fiyat').value);
+    const fiyat = parseFloat((document.getElementById('yeni-urun-fiyat').value || '0').replace(',', '.'));
     const aciklama = document.getElementById('yeni-urun-aciklama').value.trim();
     const resim = document.getElementById('yeni-urun-resim').value.trim();
     if (!ad) { bildirimGoster('Ürün adı girin!', '#e74c3c'); return; }
@@ -2676,7 +2755,8 @@
 
   function menuUrunGuncelle(i, alan, deger) {
     if (alan === 'fiyat') {
-        const fiyat = parseInt(deger);
+        const strVal = deger !== undefined && deger !== null ? deger.toString() : '0';
+        const fiyat = parseFloat(strVal.replace(',', '.'));
         if (!fiyat || fiyat <= 0) return;
         menu[aktifMenuKat][i].fiyat = fiyat;
     } else {
@@ -2894,7 +2974,7 @@
   function masaIsimDegistir(no, yeniIsim) {
     masalar[no].isim = yeniIsim.trim() || `M${no}`;
     masalariKaydet(no);
-    menuFirebaseSync();
+    masaListesiFirebaseSync();
     masaRender();
     if (seciliMasa === no) panelRender();
   }
@@ -3437,8 +3517,14 @@
   function menuFirebaseSync() {
     if (!firebaseUrl) return;
     firebaseGonder('menu', menu);
+    firebaseGonder('menuSiralamasi', Object.keys(menu));
     firebaseGonder('extraGruplari', extraGruplari);
     firebaseGonder('ekstraKategoriler', ekstraKategoriler);
+    masaListesiFirebaseSync();
+  }
+
+  function masaListesiFirebaseSync() {
+    if (!firebaseUrl) return;
     firebaseGonder('masaListesi', masaNoları.map(no => ({
       no, isim: masalar[no]?.isim || `M${no}`
     })));
@@ -3448,22 +3534,29 @@
   async function menuYukleVeBirlestir() {
     if (!firebaseUrl) return;
     try {
-      const r = await fetch(`${firebaseUrl}/menu.json`);
+      const [r, sr] = await Promise.all([
+          fetch(`${firebaseUrl}/menu.json`),
+          fetch(`${firebaseUrl}/menuSiralamasi.json`).catch(e=>({ok:false}))
+      ]);
       if (r.ok) {
         const fbMenu = await r.json();
+        let fireSira = [];
+        if (sr && sr.ok) { fireSira = await sr.json().catch(e=>[]); }
         if (fbMenu && Object.keys(fbMenu).length > 0) {
-           // Local menu sýrasını korumak için
-           const localKategoriler = Object.keys(menu);
+           // Firebase veya local siralamayi korumak icin yeniden insa ediyoruz
+           const kullanilacakSira = (fireSira && Array.isArray(fireSira) && fireSira.length > 0) ? fireSira : Object.keys(menu);
            const fireKategoriler = Object.keys(fbMenu);
-           for (const kat in menu) {
-             if (!fireKategoriler.includes(kat)) { delete menu[kat]; }
-           }
-           for (const kat of localKategoriler) {
-             if (fireKategoriler.includes(kat)) { menu[kat] = fbMenu[kat]; }
+           
+           const yeniMenu = {};
+           for (const kat of kullanilacakSira) {
+               if (fireKategoriler.includes(kat)) yeniMenu[kat] = fbMenu[kat];
            }
            for (const kat of fireKategoriler) {
-             if (!localKategoriler.includes(kat)) { menu[kat] = fbMenu[kat]; }
+               if (!yeniMenu[kat]) yeniMenu[kat] = fbMenu[kat];
            }
+           
+           for(let k in menu) delete menu[k];
+           for(let k in yeniMenu) menu[k] = yeniMenu[k];
            
            if (document.getElementById('sayfa-hizli') && document.getElementById('sayfa-hizli').classList.contains('aktif')) {
                hizliSayfaRender();
@@ -3480,10 +3573,14 @@
            if (typeof seciliMasa !== 'undefined' && seciliMasa) panelRender();
            
            return;
+        } else {
+           menuFirebaseSync(); // ilk kurulum
+           return;
         }
       }
-    } catch(e){}
-    menuFirebaseSync();
+    } catch(e) {
+      console.warn("Firebase hatasi, uzerine ezme kilitlendi");
+    }
   }
 
   // Yeni siparişleri Firebase'den dinle (polling — her 3 saniye)
