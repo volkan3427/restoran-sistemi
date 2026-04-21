@@ -466,13 +466,19 @@
         <button class="btn btn-mavi rapor-btn" id="r-btn-oncekigun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('oncekigun')">Önceki Gün</button>
         <button class="btn btn-mavi rapor-btn" id="r-btn-hafta" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('hafta')">Bu Hafta</button>
         <button class="btn btn-mavi rapor-btn" id="r-btn-ay" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('ay')">Bu Ay</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-gecenay" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('gecenay')">Geçen Ay</button>
+        <button class="btn btn-mavi rapor-btn" id="r-btn-ozel" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('ozel')">Özel</button>
       </div>
-      <input type="date" id="rapor-tarih" onchange="raporRender()" style="display:none">
-      <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()">
-      <div style="display:flex; gap:8px;">
-        <button class="btn btn-iptal" style="flex:1;padding:8px 10px;font-size:12px" onclick="kayitlariSil()">🗑️ Sil</button>
-        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#8b5cf6;border:none;" onclick="gecmisiBulutaYedekle()">☁️ Yedekle</button>
-        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#3b82f6;border:none;" onclick="gecmisiBuluttanIndir()">📥 İndir</button>
+      <div id="rapor-ozel-tarih" style="display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <input type="date" id="rapor-tarih-bas" class="arama-kutu" style="flex:1; font-size: 13px;" onchange="raporRender()">
+        <input type="date" id="rapor-tarih-bitis" class="arama-kutu" style="flex:1; font-size: 13px;" onchange="raporRender()">
+      </div>
+      <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()" style="margin-bottom:12px; width: 100%;">
+      <div style="display:flex; gap:8px; flex-wrap: wrap;">
+        <button class="btn btn-iptal" style="flex:1;padding:8px 10px;font-size:12px;min-width:70px;" onclick="kayitlariSil()">🗑️ Sil</button>
+        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#8b5cf6;border:none;min-width:70px;" onclick="gecmisiBulutaYedekle()">☁️ Yedekle</button>
+        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#3b82f6;border:none;min-width:70px;" onclick="gecmisiBuluttanIndir()">📥 İndir</button>
+        <button class="btn btn-onayla" style="flex:1;padding:8px 10px;font-size:12px;background:#10b981;border:none;min-width:100px;" onclick="raporuIndir()">📊 Excel İndir</button>
       </div>
     </div>
   </div>
@@ -2250,7 +2256,7 @@
     const now = new Date();
     const tarih = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    kayitEkle({ tarih, saat, masaNo: seciliMasa, urunler: seciliUrunler, odenenToplam, indirim: indirimTutar, tamToplam, odemeYontemi: seciliOdemeYontemi });
+    kayitEkle({ tarih, saat, masaNo: seciliMasa, masaIsim, urunler: seciliUrunler, odenenToplam, indirim: indirimTutar, tamToplam, odemeYontemi: seciliOdemeYontemi });
 
     // Masayı güncelle
     masalar[seciliMasa].adisyon = kalanUrunler;
@@ -2345,10 +2351,62 @@
       b.classList.remove('btn-onayla');
       b.classList.add('btn-mavi');
     });
-    document.getElementById('r-btn-' + val).classList.remove('btn-mavi');
-    document.getElementById('r-btn-' + val).classList.add('btn-onayla');
+    const btn = document.getElementById('r-btn-' + val);
+    if(btn) {
+       btn.classList.remove('btn-mavi');
+       btn.classList.add('btn-onayla');
+    }
+    const ozelTarih = document.getElementById('rapor-ozel-tarih');
+    if(ozelTarih) ozelTarih.style.display = (val === 'ozel') ? 'flex' : 'none';
     raporRender();
   }
+
+  window.raporuIndir = function() {
+    if (!window._filtreliSonuclar || window._filtreliSonuclar.length === 0) {
+        alert('İndirilecek satış verisi bulunamadı.');
+        return;
+    }
+
+    const gunluk = {};
+    const urunler = {};
+
+    window._filtreliSonuclar.forEach(k => {
+        if(!gunluk[k.tarih]) gunluk[k.tarih] = { ciro: 0, nakit: 0, kart: 0 };
+        gunluk[k.tarih].ciro += (k.odenenToplam || 0);
+        if (k.odemeYontemi === 'nakit') gunluk[k.tarih].nakit += (k.odenenToplam || 0);
+        if (k.odemeYontemi === 'kart') gunluk[k.tarih].kart += (k.odenenToplam || 0);
+
+        (k.urunler || []).forEach(u => {
+            if(!urunler[u.ad]) urunler[u.ad] = { adet: 0, ciro: 0 };
+            urunler[u.ad].adet += (u.adet || 1);
+            const bfiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
+            urunler[u.ad].ciro += (bfiyat * (u.adet || 1));
+        });
+    });
+
+    let csvContent = "\uFEFF"; 
+    csvContent += "Tarih;Toplam Ciro;Nakit;Kart\n";
+    Object.keys(gunluk).sort().forEach(t => {
+        const g = gunluk[t];
+        csvContent += `${t};${g.ciro.toFixed(2)};${g.nakit.toFixed(2)};${g.kart.toFixed(2)}\n`;
+    });
+
+    csvContent += "\nUrun Adi;Satis Adedi;Toplam Ciro\n";
+    Object.keys(urunler).sort((a,b) => urunler[b].adet - urunler[a].adet).forEach(u => {
+        const ur = urunler[u];
+        csvContent += `${u};${ur.adet};${ur.ciro.toFixed(2)}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `satis_raporu_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   
   window._islemFiltre = window._islemFiltre || 'yeni';
@@ -2363,23 +2421,46 @@
     const kayitlar = kayitlariAl();
     const bugun = bugunTarih();
 
-    // Dönem filtresi
-    const filtreli = kayitlar.filter(k => {
-      if (!k.tarih) return false;
-      if (donem === 'bugun') return k.tarih === bugun;
-      if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
-      if (donem === 'oncekigun') { const d = new Date(); d.setDate(d.getDate()-2); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
-      if (donem === 'hafta') {
-        const d = new Date(k.tarih);
-        const haftaBaslangic = new Date(); haftaBaslangic.setDate(haftaBaslangic.getDate() - 6);
-        return d >= haftaBaslangic;
+    function tarihUyuyorMu(kTarih, seciliDonem, bugunTarihStr) {
+      if (!kTarih) return false;
+      if (seciliDonem === 'bugun') return kTarih === bugunTarihStr;
+      if (seciliDonem === 'dun') { 
+          const d = new Date(); d.setDate(d.getDate()-1); 
+          const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+          return kTarih === dd; 
       }
-      if (donem === 'ay') {
-        const ay = bugun.substring(0, 7);
-        return k.tarih.startsWith(ay);
+      if (seciliDonem === 'oncekigun') { 
+          const d = new Date(); d.setDate(d.getDate()-2); 
+          const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+          return kTarih === dd; 
+      }
+      if (seciliDonem === 'hafta') {
+          const d = new Date(kTarih);
+          const h = new Date(); h.setDate(h.getDate() - 6);
+          return d >= h;
+      }
+      if (seciliDonem === 'ay') {
+          return kTarih.startsWith(bugunTarihStr.substring(0, 7));
+      }
+      if (seciliDonem === 'gecenay') {
+          const bd = new Date(); bd.setMonth(bd.getMonth() - 1);
+          const gecenAyStr = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,'0')}`;
+          return kTarih.startsWith(gecenAyStr);
+      }
+      if (seciliDonem === 'ozel') {
+          const bas = document.getElementById('rapor-tarih-bas').value;
+          const bitis = document.getElementById('rapor-tarih-bitis').value;
+          if (bas && bitis) return kTarih >= bas && kTarih <= bitis;
+          if (bas) return kTarih >= bas;
+          if (bitis) return kTarih <= bitis;
+          return true;
       }
       return true;
-    });
+    }
+
+    // Dönem filtresi
+    const filtreli = kayitlar.filter(k => tarihUyuyorMu(k.tarih, donem, bugun));
+    window._filtreliSonuclar = filtreli;
 
     // Ürün bazlı istatistik
     const urunIstatistik = {};
@@ -2400,9 +2481,13 @@
     const nakitCirosu = filtreli.filter(k => k.odemeYontemi === 'nakit').reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const kartCirosu = filtreli.filter(k => k.odemeYontemi === 'kart').reduce((s, k) => s + (k.odenenToplam || 0), 0);
     const toplamIndirim = filtreli.reduce((s, k) => {
-      let ind = (k.indirim !== undefined) ? k.indirim : 0;
-      if (ind === 0 && k.tamToplam) ind = k.tamToplam - (k.odenenToplam || 0);
-      else if (ind === 0 && k.toplam) ind = k.toplam - (k.odenenToplam || 0);
+      let ind = 0;
+      if (k.indirim !== undefined) {
+         ind = k.indirim;
+      } else {
+         if (k.tamToplam) ind = k.tamToplam - (k.odenenToplam || 0);
+         else if (k.toplam) ind = k.toplam - (k.odenenToplam || 0);
+      }
       return s + (ind > 0 ? ind : 0);
     }, 0);
     
@@ -2587,14 +2672,7 @@
       let iptaller = [];
       if (iptalStr) { try { iptaller = JSON.parse(iptalStr); } catch(e){} }
       
-      const iptalFiltreli = iptaller.filter(k => {
-        if (!k.tarih) return false;
-        if (donem === 'bugun') return k.tarih === bugun;
-        if (donem === 'dun') { const d = new Date(); d.setDate(d.getDate()-1); const dd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; return k.tarih === dd; }
-        if (donem === 'hafta') { const d = new Date(k.tarih); const h = new Date(); h.setDate(h.getDate()-6); return d >= h; }
-        if (donem === 'ay') return k.tarih.startsWith(bugun.substring(0, 7));
-        return true;
-      }).reverse();
+      const iptalFiltreli = iptaller.filter(k => tarihUyuyorMu(k.tarih, donem, bugun)).reverse();
 
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
@@ -2619,7 +2697,9 @@
       else if (window._islemFiltre === 'eski') islemSirali = islemSirali; // zaten eskiden yeniye sirali array
       else if (window._islemFiltre === 'yuksek_odeme') islemSirali = islemSirali.sort((a,b) => (b.odenenToplam||0) - (a.odenenToplam||0));
       else if (window._islemFiltre === 'az_odeme') islemSirali = islemSirali.sort((a,b) => (a.odenenToplam||0) - (b.odenenToplam||0));
-      else if (window._islemFiltre === 'yuksek_indirim') islemSirali = islemSirali.sort((a,b) => (b.indirim||0) - (a.indirim||0));
+      else if (window._islemFiltre === 'yuksek_indirim') {
+          islemSirali = islemSirali.filter(k => (k.indirim || 0) > 0).sort((a,b) => (b.indirim||0) - (a.indirim||0));
+      }
 
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
@@ -2630,7 +2710,7 @@
           ${islemSirali.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : islemSirali.map(k => `
             <div class="islem-item">
               <div class="islem-baslik">
-                <span class="masa-isim">Masa ${k.masaNo} ${k.indirim ? '<span style="font-size:10px;color:#db2777;border:1px solid #db2777;padding:1px 4px;border-radius:4px;margin-left:4px;">İndirim '+k.indirim+'₺</span>' : ''}</span>
+                <span class="masa-isim">${k.masaIsim || (typeof masalar !== 'undefined' && masalar[k.masaNo] && masalar[k.masaNo].isim ? masalar[k.masaNo].isim : (k.masaNo === 'Paket' ? 'Paket' : 'Masa ' + k.masaNo))} ${k.indirim ? '<span style="font-size:10px;color:#db2777;border:1px solid #db2777;padding:1px 4px;border-radius:4px;margin-left:4px;">İndirim '+k.indirim+'₺</span>' : ''}</span>
                 <span class="islem-tarih">${k.tarih} ${k.saat} · ${k.odemeYontemi==='nakit'?'💵 Nakit':'💳 Kart'}</span>
                 <span class="islem-tutar" style="font-size:16px;">${k.odenenToplam}₺</span>
               </div>
@@ -2653,15 +2733,21 @@
       const k = localStorage.getItem('restoran_menu');
       if (k) {
         const yuk = JSON.parse(k);
-        Object.keys(yuk).forEach(kat => { menu[kat] = yuk[kat]; });
-        // Silinmiş kategorileri temizle
-        Object.keys(menu).forEach(kat => { if (!yuk[kat]) delete menu[kat]; });
+        const yeniMenu = {};
+        Object.keys(yuk).forEach(kat => { yeniMenu[kat] = yuk[kat]; });
+        
+        // Mevcut menüyü sıfırlayıp, localStorage'daki sırayla yeniden ekliyoruz
+        for (let key in menu) { delete menu[key]; }
+        for (let key in yeniMenu) { menu[key] = yeniMenu[key]; }
       }
     } catch(e) {}
   }
 
   function menuKaydet() {
-    try { localStorage.setItem('restoran_menu', JSON.stringify(menu)); } catch(e) {}
+    try { 
+      localStorage.setItem('restoran_menu', JSON.stringify(menu)); 
+      localStorage.setItem('restoran_menu_ts', Date.now().toString());
+    } catch(e) {}
     menuFirebaseSync();
   }
 
@@ -3520,6 +3606,8 @@
     firebaseGonder('menuSiralamasi', Object.keys(menu));
     firebaseGonder('extraGruplari', extraGruplari);
     firebaseGonder('ekstraKategoriler', ekstraKategoriler);
+    const ts = parseInt(localStorage.getItem('restoran_menu_ts') || Date.now().toString());
+    firebaseGonder('menu_ts', ts);
     masaListesiFirebaseSync();
   }
 
@@ -3534,12 +3622,25 @@
   async function menuYukleVeBirlestir() {
     if (!firebaseUrl) return;
     try {
-      const [r, sr] = await Promise.all([
+      const [r, sr, tsR] = await Promise.all([
           fetch(`${firebaseUrl}/menu.json`),
-          fetch(`${firebaseUrl}/menuSiralamasi.json`).catch(e=>({ok:false}))
+          fetch(`${firebaseUrl}/menuSiralamasi.json`).catch(e=>({ok:false})),
+          fetch(`${firebaseUrl}/menu_ts.json`).catch(e=>({ok:false}))
       ]);
       if (r.ok) {
         const fbMenu = await r.json();
+        
+        let fbTs = 0;
+        if (tsR && tsR.ok) { fbTs = await tsR.json().catch(e=>0); }
+        let localTs = 0;
+        try { localTs = parseInt(localStorage.getItem('restoran_menu_ts') || '0'); } catch(e){}
+        
+        if (localTs > 0 && fbTs > 0 && localTs > fbTs) {
+           console.log("Yerel menü daha güncel, Firebase ezilmeden atlanıyor ve bulut güncelleniyor.");
+           menuFirebaseSync();
+           return;
+        }
+
         let fireSira = [];
         if (sr && sr.ok) { fireSira = await sr.json().catch(e=>[]); }
         if (fbMenu && Object.keys(fbMenu).length > 0) {
