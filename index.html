@@ -2134,16 +2134,12 @@
       <div class="sag-panel-alt">
         <div style="margin-bottom:10px; border-top:1px solid #334155; padding-top:10px; display:flex; flex-direction:column; gap:6px;">
           <div style="font-size:11px;color:#f97316;font-weight:bold;">Tutar Girerek Parçalı Ödeme Alın:</div>
-          <div style="display:flex; gap:6px;">
-            <input type="number" id="odeme-tutar-input" class="arama-kutu" style="flex:1; font-size:14px; padding:8px; min-width:0; box-sizing:border-box;" placeholder="Örn: 500">
-            <button class="odeme-btn" style="flex:1; padding:8px 4px; background:#0f172a; border: 1px solid #10b981; color:#10b981; font-size:12px;" onclick="tutarlaOdemeAl('nakit')">💵 Tutar Nakit</button>
-            <button class="odeme-btn" style="flex:1; padding:8px 4px; background:#0f172a; border: 1px solid #3b82f6; color:#3b82f6; font-size:12px;" onclick="tutarlaOdemeAl('kart')">💳 Tutar Kart</button>
-          </div>
+          <input type="number" id="odeme-tutar-input" class="arama-kutu" style="width:100%; font-size:14px; padding:8px; box-sizing:border-box;" placeholder="Miktar yazıp alttan Nakit/Kart seçin">
         </div>
         <button class="btn btn-indirim" style="width: 100%; margin-bottom: 8px; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 8px;" onclick="indirimAc()">🏷️ İndirim Tanımla</button>
         <div class="odeme-yontemleri" style="margin-bottom:0;">
-          <button class="odeme-btn${seciliOdemeYontemi==='nakit'?' secili':''}" onclick="odemeYontemSec(this,'nakit')">💵 Seçilenleri Nakit</button>
-          <button class="odeme-btn${seciliOdemeYontemi==='kart'?' secili':''}" onclick="odemeYontemSec(this,'kart')">💳 Seçilenleri Kart</button>
+          <button class="odeme-btn${seciliOdemeYontemi==='nakit'?' secili':''}" onclick="odemeYontemSec(this,'nakit')">💵 Nakit</button>
+          <button class="odeme-btn${seciliOdemeYontemi==='kart'?' secili':''}" onclick="odemeYontemSec(this,'kart')">💳 Kart</button>
         </div>
       </div>
     `);
@@ -2203,6 +2199,12 @@
   }
 
   function odemeYontemSec(el, tip) {
+    const inp = document.getElementById('odeme-tutar-input');
+    if (inp && inp.value.trim() !== '') {
+        tutarlaOdemeAl(tip);
+        return;
+    }
+
     seciliOdemeYontemi = tip;
     document.querySelectorAll('.odeme-btn').forEach(b => b.classList.remove('secili'));
     el.classList.add('secili');
