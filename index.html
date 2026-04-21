@@ -2268,6 +2268,10 @@
     masa.adisyon.push({ ad: odemeUrunIsim, fiyat: -tutar, adet: 1, isGece: false, kategori: 'Ödeme' });
     
     masalariKaydet();
+    
+    // 🖨️ Fiş yazdır
+    odemeFisiYazdir(masaIsim, [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1, ekstralar: [] }], tutar, 0, tutar, tip);
+
     bildirimGoster(`${tutar}₺ Kısmi Ödeme Alındı (${tip==='nakit'?'Nakit':'Kart'})`, '#22c55e');
     inp.value = '';
     
