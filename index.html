@@ -663,9 +663,18 @@
     <div class="odeme-secim-toplam" id="odeme-toplam">0₺</div>
     <div class="odeme-secim-info" id="odeme-info"></div>
 
+    <div style="margin-top:15px; margin-bottom:15px; border-top:1px solid #334155; padding-top:15px; display:flex; flex-direction:column; gap:8px;">
+      <div style="font-size:12px;color:#f97316;font-weight:bold;">Veya Tutar Girerek Parçalı Ödeme Alın (Tuşlamalı):</div>
+      <input type="number" id="odeme-tutar-input" class="arama-kutu" style="font-size:16px; padding:10px; width:100%; box-sizing:border-box;" placeholder="Örn: 500">
+      <div class="odeme-yontemleri" style="margin-top:0;">
+        <button class="odeme-btn" style="background:#0f172a; border: 1px solid #10b981; color:#10b981;" onclick="tutarlaOdemeAl('nakit')">💵 Tutar Nakit Al</button>
+        <button class="odeme-btn" style="background:#0f172a; border: 1px solid #3b82f6; color:#3b82f6;" onclick="tutarlaOdemeAl('kart')">💳 Tutar Kart Al</button>
+      </div>
+    </div>
+
     <div class="odeme-yontemleri">
-      <button class="odeme-btn secili" onclick="odemeYontemSec(this,'nakit')">💵 Nakit</button>
-      <button class="odeme-btn" onclick="odemeYontemSec(this,'kart')">💳 Kart</button>
+      <button class="odeme-btn secili" onclick="odemeYontemSec(this,'nakit')">💵 Seçilenleri Nakit</button>
+      <button class="odeme-btn" onclick="odemeYontemSec(this,'kart')">💳 Seçilenleri Kart</button>
     </div>
     <div class="modal-butonlar">
       <button class="btn btn-iptal" onclick="modalKapat()">İptal</button>
@@ -2217,6 +2226,47 @@
     sagPanelKapat();
   }
 
+  function tutarlaOdemeAl(tip) {
+    const masa = masalar[seciliMasa];
+    if(!masa || !masa.adisyon || masa.adisyon.length === 0) return;
+    const masaIsim = masa.isim || `Masa ${seciliMasa}`;
+    const inp = document.getElementById('odeme-tutar-input');
+    const tutar = parseFloat(inp.value);
+    
+    if (isNaN(tutar) || tutar <= 0) {
+       bildirimGoster('Geçerli bir tutar girin!', '#e74c3c');
+       return;
+    }
+    const masaTotal = masa.adisyon.reduce((s,u) => s + (u.fiyat * u.adet), 0);
+    if (tutar > masaTotal) {
+       bildirimGoster(`Girilen tutar kalan hesaptan (Toplam: ${masaTotal}₺) büyük olamaz!`, '#e74c3c');
+       return;
+    }
+
+    const now = new Date();
+    const tarih = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    
+    const odemeUrunIsim = `Kısmi Tahsilat`;
+    
+    // Satışa Pozitif Yansıma (Kasaya giriş)
+    kayitEkle({ 
+      tarih, saat, masaNo: seciliMasa, masaIsim, 
+      urunler: [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1 }], 
+      odenenToplam: tutar, indirim: 0, tamToplam: tutar, odemeYontemi: tip 
+    });
+
+    // Masaya Negatif Yansıma (Borçtan düşüş)
+    masa.adisyon.push({ ad: odemeUrunIsim, fiyat: -tutar, adet: 1, isGece: false, kategori: 'Ödeme' });
+    
+    masalariKaydet();
+    bildirimGoster(`${tutar}₺ Kısmi Ödeme Alındı (${tip==='nakit'?'Nakit':'Kart'})`, '#22c55e');
+    inp.value = '';
+    
+    // Modalı yenile
+    odemeRender(seciliMasa);
+  }
+
   function odemeOnay() {
     const masa = masalar[seciliMasa];
     const masaIsim = masa.isim || `Masa ${seciliMasa}`;
@@ -2240,8 +2290,8 @@
       }
     });
 
-    if (seciliUrunler.length === 0 || odenenToplam === 0) {
-      bildirimGoster('Hiç ürün seçilmedi!', '#e74c3c'); return;
+    if (seciliUrunler.length === 0 || odenenToplam < 0) {
+      bildirimGoster('Geçersiz seçim! (Ödenecek tutar 0\'ın altında olamaz)', '#e74c3c'); return;
     }
 
     // İndirim hesapla (sadece tüm ödeme yapılıyorsa uygula)
