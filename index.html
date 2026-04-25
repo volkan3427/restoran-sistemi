@@ -2692,17 +2692,32 @@
     // Gece Ürünleri Tablosu
     const geceUrunIstatistik = {};
     filtreli.forEach(k => {
+      const iskontoluOran = (k.toplam > 0) ? (k.odenenToplam / k.toplam) : 1;
       (k.urunler || []).forEach(u => {
         if (u.isGece) {
-          if (!geceUrunIstatistik[u.ad]) geceUrunIstatistik[u.ad] = {ad:u.ad, adet:0, ciro:0};
-          geceUrunIstatistik[u.ad].adet += u.adet;
-          geceUrunIstatistik[u.ad].ciro += u.fiyat * u.adet;
+          let isTatli = false;
+          if (u.kategori) {
+            isTatli = u.kategori.toLowerCase().includes('tatl');
+          } else if (typeof menu !== 'undefined') {
+            const tatliKatlari = Object.keys(menu).filter(key => key.toLowerCase().includes('tatl'));
+            for (let kat of tatliKatlari) {
+              if (menu[kat] && menu[kat].some(t => t.ad === u.ad)) isTatli = true;
+            }
+          }
+          if (!isTatli) {
+            if (!geceUrunIstatistik[u.ad]) geceUrunIstatistik[u.ad] = {ad:u.ad, adet:0, ciro:0};
+            geceUrunIstatistik[u.ad].adet += u.adet;
+            const bFiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
+            geceUrunIstatistik[u.ad].ciro += (bFiyat * (u.adet || 1)) * iskontoluOran;
+          }
         }
       });
     });
     let geceUrunSirali = Object.values(geceUrunIstatistik)
       .filter(u => !aramaKelime || u.ad.toLowerCase().includes(aramaKelime))
       .sort((a, b) => b.adet - a.adet);
+      
+    geceUrunSirali.forEach(u => u.ciro = Math.round(u.ciro));
     const maxGeceAdet = geceUrunSirali.length > 0 ? geceUrunSirali[0].adet : 1;
 
     const geceTabloHtml = geceUrunSirali.length === 0
