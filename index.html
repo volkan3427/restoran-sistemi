@@ -2479,8 +2479,27 @@
       raporRender();
   };
 
-  function raporRender() {
-    const donem = document.getElementById('rapor-donem').value;
+  function raporRender(isTumuGoster = false) {
+    if (isTumuGoster !== true) window._raporTumuGoster = false;
+    else window._raporTumuGoster = true;
+
+    const icerik = document.getElementById('rapor-icerik');
+    if (icerik) {
+        icerik.innerHTML = `<div style="padding:60px 20px;text-align:center;color:#94a3b8;font-size:16px;">
+          <div style="font-size:32px; animation: spin 1s linear infinite; display:inline-block; margin-bottom:16px;">⏳</div>
+          <div>Veriler Derleniyor... Lütfen Bekleyin.</div>
+          <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+        </div>`;
+    }
+    
+    // UI'ın çizilmesi için çok kısa bir süre bekle ve ağır işlemi çalıştır
+    setTimeout(_raporRenderAsil, 50);
+  }
+
+  function _raporRenderAsil() {
+    const donemEl = document.getElementById('rapor-donem');
+    if (!donemEl) return;
+    const donem = donemEl.value;
     const aramaKelime = (document.getElementById('urun-ara').value || '').toLowerCase();
     const kayitlar = kayitlariAl();
     const bugun = bugunTarih();
@@ -2670,6 +2689,53 @@
         </table>
       `;
 
+    // Gece Ürünleri Tablosu
+    const geceUrunIstatistik = {};
+    filtreli.forEach(k => {
+      (k.urunler || []).forEach(u => {
+        if (u.isGece) {
+          if (!geceUrunIstatistik[u.ad]) geceUrunIstatistik[u.ad] = {ad:u.ad, adet:0, ciro:0};
+          geceUrunIstatistik[u.ad].adet += u.adet;
+          geceUrunIstatistik[u.ad].ciro += u.fiyat * u.adet;
+        }
+      });
+    });
+    let geceUrunSirali = Object.values(geceUrunIstatistik)
+      .filter(u => !aramaKelime || u.ad.toLowerCase().includes(aramaKelime))
+      .sort((a, b) => b.adet - a.adet);
+    const maxGeceAdet = geceUrunSirali.length > 0 ? geceUrunSirali[0].adet : 1;
+
+    const geceTabloHtml = geceUrunSirali.length === 0
+      ? ''
+      : `
+        <div class="rapor-tablo-baslik" style="margin-top:24px; color:#8b5cf6;">Gece (00:00-08:00) Satılan Ürünler</div>
+        <table class="rapor-tablo">
+          <thead>
+            <tr>
+              <th style="color:#8b5cf6;">#</th>
+              <th style="color:#8b5cf6;">Ürün</th>
+              <th style="color:#8b5cf6;">Adet</th>
+              <th style="color:#8b5cf6;">Ciro</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${geceUrunSirali.map((u, i) => `
+              <tr>
+                <td class="sira" style="color:#8b5cf6;">${i+1}</td>
+                <td>
+                  <div class="urun-cizgi">
+                    <div class="bar" style="background:#8b5cf6; width:${Math.round((u.adet/maxGeceAdet)*80)+4}px"></div>
+                    ${u.ad}
+                  </div>
+                </td>
+                <td>${u.adet} adet</td>
+                <td>${u.ciro}₺</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
     // Günlük Ciro Tablosu
     const gunlukCiroObj = {};
     filtreli.forEach(k => {
@@ -2738,13 +2804,18 @@
       
       const iptalFiltreli = iptaller.filter(k => tarihUyuyorMu(k.tarih, donem, bugun)).reverse();
 
+      const renderLimit = window._raporTumuGoster ? 999999 : 50;
+      const renderList = iptalFiltreli.slice(0, renderLimit);
+      const limitBtnHtml = (!window._raporTumuGoster && iptalFiltreli.length > 50) ? 
+        `<div style="text-align:center; padding-top:14px;"><button onclick="raporRender(true)" class="btn-mavi" style="width:100%; padding:14px; font-size:15px; background:#1e293b; color:#ef4444; border:1px solid #ef4444; cursor:pointer; border-radius:6px;">Tümünü Göster (${iptalFiltreli.length} işlem)</button></div>` : '';
+
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
               <div class="rapor-tablo-baslik" style="margin:0;">İptal/Silinen Logları</div>
               ${selectHtml}
           </div>
-          ${iptalFiltreli.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde iptal kaydı yok</div>' : iptalFiltreli.map(k => `
+          ${renderList.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde iptal kaydı yok</div>' : renderList.map(k => `
             <div class="islem-item" style="border-left: 4px solid #ef4444;">
               <div class="islem-baslik">
                 <span class="masa-isim" style="color:#ef4444;">${k.masaIsim}</span>
@@ -2753,6 +2824,7 @@
               <div class="islem-urunler" style="color:#fca5a5;">🗑️ ${k.urunAd} x${k.miktar} ürün masadan çıkarıldı</div>
             </div>
           `).join('')}
+          ${limitBtnHtml}
         </div>
       `;
     } else {
@@ -2765,13 +2837,18 @@
           islemSirali = islemSirali.filter(k => (k.indirim || 0) > 0).sort((a,b) => (b.indirim||0) - (a.indirim||0));
       }
 
+      const renderLimit = window._raporTumuGoster ? 999999 : 50;
+      const renderList = islemSirali.slice(0, renderLimit);
+      const limitBtnHtml = (!window._raporTumuGoster && islemSirali.length > 50) ? 
+        `<div style="text-align:center; padding-top:14px;"><button onclick="raporRender(true)" class="btn-mavi" style="width:100%; padding:14px; font-size:15px; background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; cursor:pointer; border-radius:6px;">Tüm İşlemleri Göster (${islemSirali.length} işlem)</button></div>` : '';
+
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
               <div class="rapor-tablo-baslik" style="margin:0;">Kapanan Tüm Adisyonlar</div>
               ${selectHtml}
           </div>
-          ${islemSirali.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : islemSirali.map(k => `
+          ${renderList.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : renderList.map(k => `
             <div class="islem-item">
               <div class="islem-baslik">
                 <span class="masa-isim">${k.masaIsim || (typeof masalar !== 'undefined' && masalar[k.masaNo] && masalar[k.masaNo].isim ? masalar[k.masaNo].isim : (k.masaNo === 'Paket' ? 'Paket' : 'Masa ' + k.masaNo))} ${k.indirim ? '<span style="font-size:10px;color:#db2777;border:1px solid #db2777;padding:1px 4px;border-radius:4px;margin-left:4px;">İndirim '+k.indirim+'₺</span>' : ''}</span>
@@ -2781,11 +2858,12 @@
               <div class="islem-urunler">${(k.urunler||[]).map(u => `${u.ad} x${u.adet}`).join(', ')}</div>
             </div>
           `).join('')}
+          ${limitBtnHtml}
         </div>
       `;
     }
 
-    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + gunlukOzetHtml + islemHtml;
+    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + geceTabloHtml + gunlukOzetHtml + islemHtml;
   }
 
 
