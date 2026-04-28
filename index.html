@@ -1674,8 +1674,18 @@
           ${indirim > 0 ? `<div class="toplam-satir" style="color:#ef4444;font-size:12px;"><span>İndirim</span><span>-${indirim}₺</span></div>
           <div class="toplam-satir"><span class="toplam-label" style="font-weight:bold;">Net Toplam</span><span class="toplam-deger" style="color:#22c55e;">${Math.max(0,toplam-indirim)}₺</span></div>` : ''}
           
-          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet</button>` : ''}
-          
+          ${(function() {
+            let degisiklikVarMi = false;
+            if (window._seciliMasaYedekAdisyon) {
+               degisiklikVarMi = JSON.stringify(masa.adisyon) !== JSON.stringify(window._seciliMasaYedekAdisyon);
+            } else {
+               degisiklikVarMi = masa.adisyon.length > 0;
+            }
+            if (degisiklikVarMi) {
+              return `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: ${gonderilecekVarMi ? '#f39c12' : '#27ae60'}; border: 1px solid ${gonderilecekVarMi ? '#d68910' : '#2ecc71'}; color: white; padding: 12px; font-size: 14px;" onclick="${gonderilecekVarMi ? 'siparisiGonder()' : 'siparisiKaydet()'}">${gonderilecekVarMi ? '🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet' : '💾 Değişiklikleri Kaydet'}</button>`;
+            }
+            return '';
+          })()}
           <div class="butonlar">
             ${(!yoneticiModu && !garsonIzinler.odemeAl) ? '' : `<button class="btn btn-kapat" onclick="odemeAc()">Ödeme Al</button>`}
           </div>
@@ -2060,7 +2070,22 @@
 
   function panelKapat() { 
     if (seciliMasa && window._seciliMasaYedekAdisyon) {
-        masalar[seciliMasa].adisyon = window._seciliMasaYedekAdisyon; // Onaysızsa eski haline çevir
+        const currentAdisyonStr = JSON.stringify(masalar[seciliMasa].adisyon || []);
+        const yedekAdisyonStr = JSON.stringify(window._seciliMasaYedekAdisyon || []);
+        
+        if (currentAdisyonStr !== yedekAdisyonStr) {
+             if (confirm("Masada KAYDEDİLMEMİŞ değişiklikler var. Değişiklikler kaydedilsin mi?\n\nTamam = Kaydet\nİptal = Eski Haline Döndür")) {
+                 const gonderilecekVarMi = masalar[seciliMasa].adisyon.some(u => u.adet > (u.yazdirilanAdet || 0));
+                 if (gonderilecekVarMi) {
+                     siparisiGonder();
+                 } else {
+                     siparisiKaydet();
+                 }
+                 return;
+             } else {
+                 masalar[seciliMasa].adisyon = window._seciliMasaYedekAdisyon; // Onaysızsa eski haline çevir
+             }
+        }
     }
     window._seciliMasaYedekAdisyon = null;
     seciliMasa = null; 
@@ -2340,6 +2365,7 @@
       odemeAdetler = masalar[seciliMasa].adisyon.map(() => 0);
       _odemeRender();
     } else {
+      window._seciliMasaYedekAdisyon = null;
       modalKapat();
       panelKapat();
     }
