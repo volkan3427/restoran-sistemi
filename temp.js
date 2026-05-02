@@ -1,710 +1,4 @@
 
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Restoran POS">
-  <meta name="theme-color" content="#f97316">
-  <title>Restoran Masa Yönetimi</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0f172A; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-    header {
-      background: #1e293b;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid #334155;
-      flex-wrap: wrap;
-      gap: 8px;
-      flex-shrink: 0;
-      z-index: 50;
-    }
-    header h1 { font-size: 20px; color: #fff; font-weight: 800; letter-spacing: -0.5px; }
-    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .stat-badge { background: rgba(255,255,255,0.25); padding: 5px 12px; border-radius: 20px; font-size: 12px; color: #fff; font-weight: 600; }
-    .stat-badge.dolu { background: #dc2626; }
-    .stat-badge.bos { background: #16a34a; }
-    .nav-btn {
-      background: rgba(255,255,255,0.2); border: none; color: #fff;
-      padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600;
-      transition: background 0.2s;
-    }
-    .nav-btn:hover { background: rgba(255,255,255,0.35); }
-    .nav-btn.aktif { background: #1e293b; color: #f97316; }
-
-    /* SAYFA YÖNETİMİ */
-    .sayfa { display: none; flex: 1; overflow: hidden; }
-    .sayfa.aktif { display: flex; }
-
-    /* ===== GARSON SAYFASI ===== */
-    #sayfa-garson { flex-direction: row; }
-    .masa-bolumu { flex: 1; padding: 16px; overflow-y: auto; min-width: 0; background: #0f172A; }
-    .masa-bolumu h2 { margin-bottom: 14px; font-size: 13px; color: #f97316; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
-    .masa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
-
-    .masa {
-      aspect-ratio: 1; border-radius: 14px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s; border: 2px solid transparent; user-select: none;
-      color: #fff; font-weight: 700;
-    }
-    .masa:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
-    .masa.bos { background: #22c55e; }
-    .masa.secili { border: 3px solid #f97316; box-shadow: 0 0 16px #f9731688; }
-    .masa .masa-no { font-size: 17px; font-weight: bold; }
-    .masa .masa-sure { font-size: 10px; margin-top: 3px; opacity: 0.9; }
-    .masa .masa-toplam { font-size: 11px; margin-top: 2px; font-weight: 700; }
-
-    /* SIPARIŞ PANELİ */
-    .siparis-panel { display: none; width: 100%; background: #1e293b; border-left: none; flex-direction: column; overflow: hidden; }
-    #panel-icerik { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
-    .panel-baslik { padding: 13px 16px; background: #0f172A; font-size: 15px; font-weight: bold; color: #f97316; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .panel-baslik .kapat-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 18px; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .panel-baslik .kapat-btn:hover { background: rgba(255,255,255,0.4); }
-
-    /* İKİ SÜTUNLU MENÜ ALANI */
-    .menu-alan { display: flex; flex: 1; overflow: hidden; border-bottom: 2px solid #334155; min-height: 0; }
-
-    /* SOL — KATEGORİ SIDEBAR */
-    .kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; }
-    .kat-sidebar-btn { width: 100%; background: none; border: none; border-bottom: 1px solid #334155; color: #cbd5e1; padding: 13px 10px 13px 14px; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s; line-height: 1.3; }
-    .kat-sidebar-btn:hover { background: #334155; color: #f97316; }
-    .kat-sidebar-btn.aktif { background: #f97316; color: #fff; }
-    .kat-sidebar-btn.aktif .kat-ok { color: #fff; }
-    .kat-ok { font-size: 10px; color: #64748b; flex-shrink: 0; margin-left: 4px; }
-
-    /* SAĞ — ÜRÜN LİSTESİ */
-    .urun-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: #1e293b; }
-    .urun-satir { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #334155; cursor: pointer; transition: background 0.15s; gap: 8px; flex-shrink: 0; }
-    .urun-satir:hover { background: #0f172A; }
-    .urun-satir:active { background: #475569; }
-    .urun-satir .us-ad { flex: 1; font-size: 13px; color: #f8fafc; }
-    .urun-satir .us-fiyat { font-size: 13px; font-weight: bold; color: #f97316; white-space: nowrap; }
-
-    /* ADISYON */
-    .adisyon { flex-shrink: 0; min-height: 180px; max-height: 280px; overflow-y: auto; padding: 6px 10px; background: #1e293b; }
-    .adisyon h3 { font-size: 11px; color: #f97316; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-    .adisyon-item { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #334155; font-size: 11px; gap: 4px; }
-    .adisyon-item .urun-adi { flex: 1; font-size: 11px; color: #f8fafc; line-height: 1.1; }
-    .adet-ctrl { display: flex; align-items: center; gap: 3px; }
-    .adet-ctrl button { background: #475569; border: none; color: #f97316; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 14px; font-weight: bold; }
-    .adet-ctrl button:hover { background: #f97316; color: #fff; }
-    .adisyon-item .fiyat { min-width: 45px; text-align: right; color: #f97316; font-weight: bold; font-size: 11px; }
-    .bos-adisyon { text-align: center; padding: 14px 0; color: #64748b; font-size: 13px; }
-
-    .alt-panel { padding: 10px 14px; background: #0f172A; border-top: 2px solid #334155; flex-shrink: 0; }
-    .toplam-satir { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
-    .toplam-label { color: #94a3b8; }
-    .toplam-deger { font-weight: bold; color: #f97316; font-size: 16px; }
-    .butonlar { display: flex; gap: 7px; margin-top: 8px; }
-    .btn { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-    .btn:hover { opacity: 0.85; }
-    .btn-onayla { background: #22c55e; color: white; }
-    .btn-kapat { background: #f97316; color: white; }
-    .btn-iptal { background: #94a3b8; color: white; }
-    .btn-mavi { background: #3b82f6; color: white; }
-    .btn-indirim { background: #8b5cf6; color: white; }
-
-    /* İNDİRİM MODAL */
-    .indirim-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; align-items: center; justify-content: center; }
-    .indirim-overlay.aktif { display: flex; }
-    .indirim-modal { background: #1e293b; border-radius: 14px; padding: 22px; width: 300px; border: 2px solid #334155; box-shadow: 0 10px 40px rgba(249,115,22,0.2); text-align: center; }
-    .indirim-modal h3 { color: #f97316; margin-bottom: 16px; font-size: 16px; }
-    .indirim-input { width: 100%; border: 2px solid #334155; border-radius: 8px; padding: 12px; font-size: 22px; text-align: center; color: #f97316; background: #0f172A; outline: none; font-weight: bold; margin-bottom: 12px; }
-    .indirim-input:focus { border-color: #f97316; }
-    .indirim-butonlar { display: flex; gap: 8px; }
-    .indirim-kisayollar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center; }
-    .indirim-kisayol { background: #0f172A; border: 1px solid #334155; color: #f97316; padding: 5px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; font-weight: 600; }
-    .indirim-kisayol:hover { background: #f97316; color: #fff; }
-
-    .bos-panel { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; color: #475569; }
-    .bos-panel .ikon { font-size: 48px; }
-
-    /* ===== ÖDEME MODAL ===== */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
-    .modal-overlay.aktif { display: flex; }
-    .modal { background: #1e293b; border-radius: 14px; padding: 22px; width: 100%; max-width: 400px; border: 1px solid #334155; max-height: 90vh; overflow-y: auto; }
-    .modal h2 { margin-bottom: 12px; color: #f97316; font-size: 17px; }
-
-    /* Kısmi ödeme */
-    .odeme-urun-listesi { margin-bottom: 14px; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
-    .odeme-urun-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px dashed #334155; background: #1e293b; transition: background 0.2s; }
-    .odeme-urun-item:last-child { border-bottom: none; }
-    .odeme-urun-item.secili { background: #0f172A; }
-    .odeme-urun-item .ou-adi { flex: 1; font-size: 13px; cursor: pointer; padding: 4px 0; border-radius: 4px; user-select: none; transition: color 0.15s; color: #f8fafc; }
-    .odeme-urun-item .ou-adi:hover { color: #f97316; }
-    .odeme-urun-item.secili .ou-adi { color: #f97316; font-weight: bold; }
-    .odeme-urun-item .ou-stok { font-size: 11px; color: #64748b; white-space: nowrap; }
-    .odeme-urun-item.secili .ou-stok { color: #f97316; }
-    .odeme-urun-item .ou-fiyat { font-size: 13px; font-weight: bold; color: #64748b; min-width: 60px; text-align: right; }
-    .odeme-urun-item.secili .ou-fiyat { color: #f97316; }
-    .ou-adet-ctrl { display: flex; align-items: center; gap: 5px; }
-    .ou-adet-ctrl button { background: #475569; border: none; color: #f97316; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 16px; font-weight: bold; }
-    .ou-adet-ctrl button:hover { background: #f97316; color: #fff; }
-    .ou-adet-ctrl span { min-width: 22px; text-align: center; font-size: 14px; font-weight: bold; color: #f97316; }
-    .tumu-sec-btn { width: 100%; padding: 8px; background: #0f172A; border: 1px dashed #f97316; border-radius: 6px; color: #f97316; font-size: 12px; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; font-weight: 600; }
-    .tumu-sec-btn:hover { background: #f97316; color: #fff; border-color: #f97316; }
-
-    .odeme-secim-toplam { text-align: center; font-size: 28px; font-weight: bold; color: #22c55e; margin: 12px 0; }
-    .odeme-secim-info { text-align: center; font-size: 12px; color: #94a3b8; margin-bottom: 12px; }
-
-    .odeme-yontemleri { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-    .odeme-btn { padding: 10px; border: 2px solid #334155; background: #1e293b; color: #666; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; }
-    .odeme-btn.secili { border-color: #f97316; background: #0f172A; color: #f97316; }
-    .modal-butonlar { display: flex; gap: 8px; }
-
-    /* ===== RAPORLAR SAYFASI ===== */
-    #sayfa-raporlar { flex-direction: column; overflow-y: auto; padding: 20px; background: #0f172A; }
-    .rapor-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-    .rapor-header h2 { font-size: 18px; color: #f97316; flex: 1; }
-    .rapor-filtre { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .rapor-filtre input, .rapor-filtre select {
-      background: #1e293b; border: 1px solid #334155; color: #f8fafc;
-      padding: 8px 12px; border-radius: 8px; font-size: 13px; outline: none;
-    }
-    .rapor-filtre input:focus, .rapor-filtre select:focus { border-color: #f97316; }
-    .arama-kutu {
-      background: #1e293b; border: 1px solid #334155; color: #f8fafc;
-      padding: 8px 14px; border-radius: 8px; font-size: 13px; width: 200px; outline: none;
-    }
-    .arama-kutu:focus { border-color: #f97316; }
-
-    .ozet-kutular { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .ozet-kutu { background: #f97316; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(249,115,22,0.25); }
-    .ozet-kutu .oz-label { font-size: 12px; color: rgba(255,255,255,0.8); margin-bottom: 6px; }
-    .ozet-kutu .oz-deger { font-size: 22px; font-weight: bold; color: #fff; }
-    .ozet-kutu .oz-alt { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 4px; }
-
-    .rapor-tablo-baslik { font-size: 14px; color: #f97316; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-    .rapor-tablo { width: 100%; border-collapse: collapse; }
-    .rapor-tablo th { background: #0f172A; color: #f97316; padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .rapor-tablo td { padding: 10px 14px; border-bottom: 1px solid #334155; font-size: 13px; color: #f8fafc; background: #1e293b; }
-    .rapor-tablo tr:hover td { background: #0f172A; }
-    .rapor-tablo .sira { font-weight: bold; color: #f97316; width: 40px; }
-    .rapor-tablo .urun-cizgi { display: flex; align-items: center; gap: 8px; }
-    .bar { height: 6px; border-radius: 3px; background: #f97316; display: inline-block; min-width: 4px; }
-    .rapor-bos { text-align: center; padding: 40px; color: #64748b; }
-
-    /* İşlem geçmişi */
-    .islem-listesi { margin-top: 24px; }
-    .islem-item { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(249,115,22,0.1); }
-    .islem-baslik { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .islem-baslik .masa-isim { font-weight: bold; color: #f97316; font-size: 14px; }
-    .islem-baslik .islem-tarih { font-size: 12px; color: #94a3b8; }
-    .islem-baslik .islem-tutar { font-weight: bold; color: #22c55e; font-size: 14px; }
-    .islem-urunler { font-size: 12px; color: #94a3b8; }
-
-    /* BİLDİRİM */
-    .bildirim { position: fixed; top: 20px; right: 20px; background: #f97316; color: white; padding: 11px 18px; border-radius: 10px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 16px rgba(249,115,22,0.4); z-index: 999; opacity: 0; transform: translateY(-10px); transition: opacity 0.3s, transform 0.3s; max-width: 280px; pointer-events: none; }
-    .bildirim.goster { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
-    /* SAĞ KAYAR PANEL */
-    .sag-panel-kap { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; transition: padding-right 0.22s cubic-bezier(.4,0,.2,1); }
-    .sag-panel-kap.panel-acik { padding-right: 340px; }
-    .sag-panel {
-      position: absolute; top: 0; right: 0; bottom: 0; width: 0;
-      background: #1e293b; border-left: 0 solid #334155;
-      display: flex; flex-direction: column; overflow: hidden;
-      transition: width 0.22s cubic-bezier(.4,0,.2,1), border-width 0.22s;
-      z-index: 20; box-shadow: -4px 0 20px rgba(249,115,22,0.15);
-    }
-    .sag-panel.acik { width: 340px; border-left-width: 2px; }
-    .sag-panel-baslik {
-      padding: 13px 14px; background: #0f172A; font-size: 14px; font-weight: bold;
-      color: #f97316; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-      border-bottom: 1px solid #334155;
-    }
-    .sag-panel-geri {
-      background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 20px;
-      cursor: pointer; line-height: 1; padding: 2px 6px; flex-shrink: 0; border-radius: 50%;
-    }
-    .sag-panel-geri:hover { background: rgba(255,255,255,0.4); }
-    .sag-panel-icerik { flex: 1; overflow-y: auto; background: #1e293b; }
-    .sag-panel-alt {
-      padding: 10px 12px; background: #0f172A;
-      border-top: 1px solid #334155; flex-shrink: 0;
-    }
-
-    /* EKSTRA INLINE PANEL */
-    .ekstra-inline-baslik { padding: 10px 12px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; background: #0f172A; flex-shrink: 0; }
-    .ekstra-geri-btn { background: none; border: none; color: #f97316; font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px; }
-    .ekstra-geri-btn:hover { color: #334155; }
-    .ekstra-inline-grup-baslik { padding: 8px 14px 4px; font-size: 10px; color: #f97316; text-transform: uppercase; letter-spacing: 1px; background: #0f172A; font-weight: 700; }
-    .urun-satir.ekstra-secili { background: #0f172A; }
-    .urun-satir.ekstra-secili .us-ad { color: #f97316; font-weight: bold; }
-    .urun-satir.ekstra-secili .us-fiyat { color: #334155; }
-    .ekstra-inline-footer { padding: 10px 12px; border-top: 1px solid #334155; background: #0f172A; flex-shrink: 0; }
-
-    /* MASA YÖNETİM */
-    .my-masa-kart { background: #0f172A; border-radius: 10px; padding: 10px 8px; text-align: center; position: relative; border: 2px solid #334155; }
-    .my-masa-kart.bos { border-color: #22c55e; }
-    .my-masa-kart.dolu { border-color: #ef4444; opacity: 0.8; }
-    .my-masa-no { font-size: 15px; font-weight: bold; margin-bottom: 4px; color: #f8fafc; }
-    .my-masa-durum { font-size: 10px; color: #94a3b8; }
-    .my-masa-kart.dolu .my-masa-durum { color: #ef4444; }
-    .my-sil-btn { position: absolute; top: 4px; right: 4px; background: #ef4444; border: none; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
-    .my-sil-btn:hover { background: #dc2626; }
-    .my-isim-input { width: 100%; margin-top: 6px; background: #1e293b; border: 1px solid #334155; border-radius: 5px; color: #f8fafc; font-size: 11px; padding: 4px 6px; text-align: center; outline: none; }
-    .my-isim-input:focus { border-color: #f97316; color: #f97316; }
-    .my-isim-input:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* MENÜ YÖNETİM */
-    .menu-kat-btn { background: #1e293b; border: 1px solid #334155; color: #f97316; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.2s; font-weight: 600; }
-    .menu-kat-btn.aktif { background: #f97316; color: white; border-color: #f97316; }
-    .menu-urun-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #334155; background: #1e293b; }
-    .menu-urun-row:last-child { border-bottom: none; }
-    .menu-urun-row .mu-ad { flex: 1; font-size: 13px; color: #f8fafc; }
-    .menu-urun-row .mu-fiyat { font-size: 13px; font-weight: bold; color: #f97316; min-width: 55px; text-align: right; }
-    .mu-sil-btn { background: #ef4444; border: none; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .mu-sil-btn:hover { background: #dc2626; }
-    .mu-fiyat-input { background: #1e293b; border: 1px solid #334155; color: #f97316; padding: 3px 6px; border-radius: 4px; font-size: 12px; width: 70px; text-align: right; outline: none; }
-    .mu-fiyat-input:focus { border-color: #f97316; }
-
-    /* ===== MOD SİSTEMİ ===== */
-    .mod-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; transition: all 0.2s; }
-    .mod-badge.yonetici { background: #1e293b; color: #f97316; border: 2px solid rgba(255,255,255,0.5); }
-    .mod-badge.garson { background: rgba(255,255,255,0.15); color: #fff; border: 2px solid rgba(255,255,255,0.4); }
-
-    /* PIN MODAL */
-    .pin-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; }
-    .pin-modal-overlay.aktif { display: flex; }
-    .pin-modal { background: #1e293b; border-radius: 16px; padding: 28px 24px; width: 320px; border: 2px solid #334155; text-align: center; box-shadow: 0 10px 40px rgba(249,115,22,0.3); }
-    .pin-modal h2 { color: #f97316; margin-bottom: 6px; font-size: 18px; }
-    .pin-modal p { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
-    .pin-display { font-size: 32px; letter-spacing: 12px; color: #f8fafc; height: 48px; margin-bottom: 20px; }
-    .pin-tuslar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .pin-tus { background: #0f172A; border: 1px solid #334155; color: #f8fafc; font-size: 20px; font-weight: bold; padding: 14px; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
-    .pin-tus:hover { background: #f97316; color: #fff; border-color: #f97316; }
-    .pin-tus.sil { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
-    .pin-tus.sil:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
-    .pin-hata { color: #ef4444; font-size: 13px; margin-top: 10px; min-height: 20px; }
-
-    /* GARSON AYARLARI MODAL */
-    .izin-satir { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #334155; }
-    .izin-satir:last-child { border-bottom: none; }
-    .izin-label { font-size: 14px; color: #f8fafc; }
-    .izin-label small { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
-    .toggle-switch { position: relative; width: 44px; height: 24px; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; inset: 0; background: #e2e8f0; border-radius: 24px; cursor: pointer; transition: 0.3s; }
-    .toggle-slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.3s; }
-    input:checked + .toggle-slider { background: #f97316; }
-    input:checked + .toggle-slider:before { transform: translateX(20px); }
-    .pin-degistir { display: flex; gap: 8px; margin-top: 14px; }
-    .pin-input { flex: 1; background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 9px 12px; border-radius: 8px; font-size: 14px; letter-spacing: 4px; outline: none; text-align: center; }
-    .pin-input:focus { border-color: #f97316; }
-
-    /* ===== HIZLI SATIŞ SAYFASI ===== */
-    #sayfa-hizli { flex-direction: row; }
-    .hizli-menu { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-    .hizli-kat-sidebar { width: 160px; flex-shrink: 0; overflow-y: auto; background: #0f172A; border-right: 1px solid #334155; }
-    .hizli-urun-panel { flex: 1; overflow-y: auto; background: #1e293b; }
-    .hizli-ozet { width: 320px; flex-shrink: 0; background: #1e293b; border-left: 2px solid #334155; display: flex; flex-direction: column; overflow: hidden; }
-    .hizli-ozet-baslik { padding: 13px 16px; background: #0f172A; font-size: 14px; font-weight: bold; color: #f97316; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
-    .hizli-adisyon { flex: 1; overflow-y: auto; padding: 4px 8px; min-height: 0; }
-    .hizli-bos { text-align: center; padding: 40px 0; color: #64748b; font-size: 13px; }
-    .hizli-alt { padding: 10px 14px; background: #0f172A; border-top: 1px solid #334155; flex-shrink: 0; }
-
-    /* MOBİL UYUMLU */
-    @media (max-width: 700px) {
-      header h1 { font-size: 16px; }
-      .stat-badge { font-size: 11px; padding: 4px 9px; }
-      .nav-btn { font-size: 12px; padding: 6px 12px; }
-
-      #sayfa-garson { flex-direction: column; }
-      .masa-bolumu { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; }
-      .adisyon { height: 18vh; min-height: 0; max-height: none; }
-      .siparis-panel { width: 100%; border-left: none; border-top: 2px solid #334155; flex: 1; }
-      .masa-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
-      .masa .masa-no { font-size: 13px; }
-      .kat-sidebar { width: 100px; }
-      .kat-sidebar-btn { font-size: 11px; padding: 10px 6px 10px 10px; }
-
-      #sayfa-hizli { flex-direction: column; }
-      .hizli-menu { flex: none; height: 50vh; }
-      .hizli-ozet { width: 100%; border-left: none; border-top: 2px solid #334155; flex: 1; }
-      .hizli-kat-sidebar { width: 100px; }
-
-      .alt-panel { padding-bottom: 30px; }
-      .hizli-alt { padding-bottom: 30px; }
-
-      .urun-listesi { max-height: 150px; }
-
-      #sayfa-raporlar { padding: 12px; }
-      .rapor-header { flex-direction: column; align-items: flex-start; }
-      .arama-kutu { width: 100%; }
-
-      .modal { padding: 16px; }
-      
-      #odeme-modal .modal {
-        width: 100%; height: 100%; max-width: none; border-radius: 0;
-        display: flex; flex-direction: column; padding: 20px 16px;
-      }
-      #odeme-modal .odeme-urun-listesi { flex: 1; max-height: none; margin-bottom: 20px; }
-      #odeme-modal .modal-butonlar { margin-top: auto; padding-top: 10px; }
-
-      .odeme-yontemleri { grid-template-columns: 1fr 1fr; }
-
-      .ozet-kutular { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .ozet-kutu .oz-deger { font-size: 18px; }
-
-      .rapor-tablo th, .rapor-tablo td { padding: 8px 10px; font-size: 12px; }
-      
-      .sag-panel {
-        position: fixed !important;
-        top: 0 !important; 
-        bottom: 0 !important; 
-        right: 0 !important; 
-        width: 35vw !important; 
-        min-width: 250px;
-        left: auto !important; 
-        height: 100% !important;
-        border-top: none; 
-        border-left: 2px solid #f97316;
-        transform: translateX(110%) !important;
-        transition: transform 0.3s cubic-bezier(.4,0,.2,1) !important;
-        z-index: 10000 !important; 
-        box-shadow: -4px 0 25px rgba(0,0,0,0.5);
-      }
-      .sag-panel.acik { transform: translateX(0) !important; }
-      .sag-panel-kap.panel-acik { padding-right: 0; }
-      .sag-panel-alt { padding-bottom: 110px !important; }
-    }
-  </style>
-</head>
-<body>
-<div id="internet-durum" style="display:none; position:fixed; top:0; left:0; width:100%; background:#ef4444; color:#fff; text-align:center; padding:10px; font-size:14px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.3);">⚠️ İNTERNET BAĞLANTISI KOPTU! Şuan çevrimdışı çalışıyorsunuz, veriler kaydediliyor ancak diğer cihazlarla eşitlenmiyor.</div>
-
-<!-- SİSTEM GİRİŞ EKRANI -->
-<div id="ana-giris-ekrani" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #334155, #f97316);z-index:99999;align-items:center;justify-content:center;flex-direction:column;color:#fff;">
-  <div style="background:rgba(255,255,255,0.1);padding:40px;border-radius:16px;text-align:center;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-    <h1 style="font-size:24px;margin-bottom:8px">🍽️ Grab Coffee Co.</h1>
-    <p style="font-size:13px;opacity:0.8;margin-bottom:24px;">Sisteme giriş için erişim şifresi gereklidir</p>
-    <input type="password" id="sistem-giris-sifre" placeholder="Erişim Şifresi" style="width:100%;padding:12px;border-radius:8px;border:none;outline:none;font-size:16px;text-align:center;margin-bottom:16px;color:#f8fafc;" onkeyup="if(event.key==='Enter') sistemGirisYap()">
-    <button onclick="sistemGirisYap()" style="width:100%;padding:12px;border-radius:8px;border:none;background:#22c55e;color:#fff;font-size:15px;font-weight:bold;cursor:pointer;">Giriş Yap</button>
-    <div id="sistem-giris-hata" style="color:#fee2e2;font-size:12px;margin-top:12px;min-height:16px;"></div>
-  </div>
-</div>
-
-<header>
-  <h1>🍽️ Restoran</h1>
-  <div class="header-right">
-    <span class="stat-badge bos" id="bos-say">Boş: 0</span>
-    <span class="stat-badge dolu" id="dolu-say">Dolu: 0</span>
-    
-    <button class="nav-btn aktif" onclick="sayfaGoster('garson', this)">🪑 Masalar</button>
-    <button class="nav-btn yonetici-only" id="nav-hizli" onclick="sayfaGoster('hizli', this)">🥡 Hızlı Satış</button>
-    <button class="nav-btn yonetici-only" id="nav-raporlar" onclick="sayfaGoster('raporlar', this)">📊 Raporlar</button>
-    <button class="nav-btn yonetici-only" onclick="masaYonetimAc()">⚙️ Masa Düzenle</button>
-    <button class="nav-btn yonetici-only" onclick="menuYonetimAc()">🍽️ Menü Düzenle</button>
-    <button class="nav-btn yonetici-only" onclick="garsonAyarlariAc()">👤 Garson Ayarları</button>
-    <button class="nav-btn yonetici-only" id="yazici-btn" onclick="yaziciBagla()" style="background:rgba(255,255,255,0.15);">🖨️ Yazıcı Bağla</button>
-    <button class="mod-badge yonetici" id="mod-badge" onclick="modGecis()">🔓 Yönetici</button>
-  </div>
-</header>
-
-<!-- GARSON SAYFASI -->
-<div class="sayfa aktif" id="sayfa-garson">
-  <div class="masa-bolumu">
-    <h2>Masalar</h2>
-    <div class="masa-grid" id="masa-grid"></div>
-  </div>
-  <div class="siparis-panel" id="siparis-panel">
-    <div id="panel-icerik">
-      <div class="bos-panel"><div class="ikon">👆</div><div>Masa seçin</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- HIZLI SATIŞ SAYFASI -->
-<div class="sayfa" id="sayfa-hizli">
-  <!-- Sol: Kategori + Ürün -->
-  <div class="hizli-menu sag-panel-kap" id="hizli-menu-kap">
-    <div class="menu-alan" style="border-bottom:none;">
-      <div class="hizli-kat-sidebar" id="hizli-kat-sidebar"></div>
-      <div class="hizli-urun-panel" id="hizli-urun-panel"></div>
-    </div>
-    <div class="sag-panel" id="hizli-sag-panel"></div>
-  </div>
-  <!-- Sağ: Sipariş Özeti -->
-  <div class="hizli-ozet">
-    <div class="hizli-ozet-baslik">
-      <span>🥡 Paket Sipariş</span>
-      <button class="btn btn-iptal" style="flex:none;padding:5px 12px;font-size:12px;" onclick="hizliTemizle()">Temizle</button>
-    </div>
-    <div class="hizli-adisyon" id="hizli-adisyon">
-      <div class="hizli-bos">Menüden ürün ekleyin</div>
-    </div>
-    <div class="hizli-alt">
-      <div class="toplam-satir">
-        <span class="toplam-label">Toplam</span>
-        <span class="toplam-deger" id="hizli-toplam">0₺</span>
-      </div>
-      <div class="butonlar" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
-        <button class="btn btn-onayla" style="padding:12px; font-size:14px; font-weight:bold; background-color:#f39c12; color:white; border:none; border-radius:8px;" onclick="hizliSiparisiYazdir()">🚀 Mutfağa Yazdır</button>
-        <button class="btn btn-kapat" onclick="hizliOdemeAc()">💳 Ödeme Al</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- RAPORLAR SAYFASI -->
-<div class="sayfa" id="sayfa-raporlar">
-  <div class="rapor-header">
-    <h2>📊 Satış Raporları</h2>
-    <div class="rapor-filtre">
-      <input type="hidden" id="rapor-donem" value="bugun">
-      <div id="rapor-butonlar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; width: 100%;">
-        <button class="btn btn-onayla rapor-btn" id="r-btn-bugun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('bugun')">Bugün</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-dun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('dun')">Dün</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-oncekigun" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('oncekigun')">Önceki Gün</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-hafta" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('hafta')">Bu Hafta</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-ay" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('ay')">Bu Ay</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-gecenay" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('gecenay')">Geçen Ay</button>
-        <button class="btn btn-mavi rapor-btn" id="r-btn-ozel" style="flex:1; padding: 10px; font-size: 13px;" onclick="raporAyarla('ozel')">Özel</button>
-      </div>
-      <div id="rapor-ozel-tarih" style="display:none; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-        <input type="date" id="rapor-tarih-bas" class="arama-kutu" style="flex:1; font-size: 13px;" onchange="raporRender()">
-        <input type="date" id="rapor-tarih-bitis" class="arama-kutu" style="flex:1; font-size: 13px;" onchange="raporRender()">
-      </div>
-      <input type="text" class="arama-kutu" id="urun-ara" placeholder="🔍 Ürün ara..." oninput="raporRender()" style="margin-bottom:12px; width: 100%;">
-      <div style="display:flex; gap:8px; flex-wrap: wrap;">
-        <button class="btn btn-iptal" style="flex:1;padding:8px 10px;font-size:12px;min-width:70px;" onclick="kayitlariSil()">🗑️ Sil</button>
-        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#8b5cf6;border:none;min-width:70px;" onclick="gecmisiBulutaYedekle()">☁️ Yedekle</button>
-        <button class="btn btn-mavi" style="flex:1;padding:8px 10px;font-size:12px;background:#3b82f6;border:none;min-width:70px;" onclick="gecmisiBuluttanIndir()">📥 İndir</button>
-        <button class="btn btn-onayla" style="flex:1;padding:8px 10px;font-size:12px;background:#10b981;border:none;min-width:100px;" onclick="raporuIndir()">📊 Excel İndir</button>
-      </div>
-    </div>
-  </div>
-  <div id="rapor-icerik"></div>
-</div>
-
-<!-- MENÜ YÖNETİM MODAL -->
-<div class="modal-overlay" id="menu-yonetim-modal">
-  <div class="modal" style="max-width:520px">
-    <h2>🍽️ Menü Yönetimi</h2>
-
-    <!-- Kategori seçici -->
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="menu-kat-tabs"></div>
-
-    <!-- Seçili kategorideki ürünler -->
-    <div id="menu-urun-listesi" style="border:1px solid #334155;border-radius:8px;overflow:hidden;margin-bottom:14px;max-height:300px;overflow-y:auto;"></div>
-
-    <!-- Yeni ürün ekle -->
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Yeni Ürün Ekle</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="yeni-urun-ad" type="text" placeholder="Ürün adı" style="flex:2;min-width:120px;background:#1a1a2e;border:1px solid #334155;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;outline:none;">
-        <input id="yeni-urun-fiyat" type="number" placeholder="Fiyat ₺" style="flex:1;min-width:80px;background:#1a1a2e;border:1px solid #334155;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;outline:none;">
-        <input id="yeni-urun-aciklama" type="text" placeholder="Açıklama (opsiyonel)" style="flex:2;min-width:120px;background:#1a1a2e;border:1px solid #334155;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;outline:none;">
-        <label id="yeni-urun-resim-label" style="flex:2;min-width:120px;background:#1a1a2e;border:1px solid #334155;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0;">
-          📷 Resim Seç (Ops.)
-          <input type="file" accept="image/*" style="display:none" onchange="yeniUrunResimSecildi(this)">
-        </label>
-        <input type="hidden" id="yeni-urun-resim" value="">
-        <button class="btn btn-onayla" style="flex:none;padding:8px 16px;width:100%" onclick="menuUrunEkle()">➕ Ekle</button>
-      </div>
-    </div>
-
-    <!-- Kategori ekle/sil -->
-    <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;margin-bottom:14px;">
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Kategori Yönetimi</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="yeni-kat-ad" type="text" placeholder="Yeni kategori adı" style="flex:2;min-width:140px;background:#1a1a2e;border:1px solid #334155;color:#f8fafc;padding:8px 10px;border-radius:6px;font-size:13px;outline:none;">
-        <button class="btn btn-mavi" style="flex:none;padding:8px 14px" onclick="menuKategoriEkle()">➕ Kategori</button>
-        <button class="btn btn-kapat" style="flex:none;padding:8px 14px" onclick="menuKategoriSil()">🗑️ Sil</button>
-      </div>
-    </div>
-
-    <button class="btn btn-iptal" style="width:100%" onclick="menuYonetimKapat()">Kapat</button>
-  </div>
-</div>
-
-<!-- PIN MODAL -->
-<div class="pin-modal-overlay" id="pin-modal">
-  <div class="pin-modal">
-    <h2>🔐 Yönetici Girişi</h2>
-    <p>PIN kodunu girin</p>
-    <div class="pin-display" id="pin-display">····</div>
-    <div class="pin-tuslar">
-      <button class="pin-tus" onclick="pinEkle('1')">1</button>
-      <button class="pin-tus" onclick="pinEkle('2')">2</button>
-      <button class="pin-tus" onclick="pinEkle('3')">3</button>
-      <button class="pin-tus" onclick="pinEkle('4')">4</button>
-      <button class="pin-tus" onclick="pinEkle('5')">5</button>
-      <button class="pin-tus" onclick="pinEkle('6')">6</button>
-      <button class="pin-tus" onclick="pinEkle('7')">7</button>
-      <button class="pin-tus" onclick="pinEkle('8')">8</button>
-      <button class="pin-tus" onclick="pinEkle('9')">9</button>
-      <button class="pin-tus sil" onclick="pinIptal()">İptal</button>
-      <button class="pin-tus" onclick="pinEkle('0')">0</button>
-      <button class="pin-tus sil" onclick="pinSil()">⌫</button>
-    </div>
-    <div class="pin-hata" id="pin-hata"></div>
-  </div>
-</div>
-
-<!-- GARSON AYARLARI MODAL -->
-<div class="modal-overlay" id="garson-modal">
-  <div class="modal" style="max-width:420px">
-    <h2>👤 Garson Ayarları</h2>
-    <p style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Garson modunda hangi özellikler aktif olsun?</p>
-
-    <div class="izin-satir">
-      <div class="izin-label">🥡 Hızlı Satış
-        <small>Paket/takeaway sipariş alabilsin</small>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="izin-hizli" onchange="izinKaydet()">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="izin-satir">
-      <div class="izin-label">💳 Ödeme Al
-        <small>Masa ödemesi alabilsin</small>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="izin-odeme" onchange="izinKaydet()">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="izin-satir">
-      <div class="izin-label">🗑️ Adisyon Silme
-        <small>Sipariş ve adisyonu temizleyebilsin</small>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="izin-sil" onchange="izinKaydet()">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460;">
-      <div style="font-size:13px;color:#22c55e;margin-bottom:6px;font-weight:bold;">📱 Aktif Cihaz Yönetimi</div>
-      <div style="font-size:11px;color:#aaa;margin-bottom:8px;">Bekleyen ve Onaylanan cihazları aşağıdan yönetebilirsiniz.</div>
-      <div id="cihaz-yonetim-listesi" style="background:#1a1a2e; border-radius:6px; padding:10px; max-height:200px; overflow-y:auto;">
-         <div style="color:#666; font-size:11px; text-align:center;">Cihazlar Yükleniyor...</div>
-      </div>
-      <button class="btn btn-mavi" style="width:100%; padding:8px; margin-top:8px; font-size:11px;" onclick="cihazlariYukleVeYonet()">Cihaz Listesini Yenile</button>
-    </div>
-
-    <!-- Eski şifre alanı kalktı, yerine cihaz yönetimi geldi -->
-    <div style="display:none;">
-      <div style="font-size:11px;color:#aaa;margin-bottom:8px;">Bu şifreyi değiştirdiğiniz an, sistemi kullanan tüm diğer cihazlar sistemden atılır ve yeni şifreyi girmeden erişemezler. (Korumayı kaldırmak için boş kaydedin)</div>
-      <div class="pin-degistir">
-        <input type="text" class="pin-input" id="yeni-sistem-sifre" placeholder="Örn: Aslan2024" style="background:#1a1a2e;color:#fff;">
-        <button class="btn btn-onayla" style="flex:none;padding:9px 16px;background:#e11d48;border:1px solid #be123c;" onclick="uzakSifreDegistir()">Değiştir / At</button>
-      </div>
-    </div>
-
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460;">
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">🔑 Yönetici PIN Kodunu Değiştir</div>
-      <div class="pin-degistir">
-        <input type="password" class="pin-input" id="yeni-pin" maxlength="4" placeholder="····" inputmode="numeric">
-        <button class="btn btn-mavi" style="flex:none;padding:9px 16px" onclick="pinDegistir()">Kaydet</button>
-      </div>
-    </div>
-
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460;">
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">☁️ Firebase Canlı İzleme</div>
-      <div style="font-size:11px;color:#cbd5e1;margin-bottom:8px;">Telefondan takip için Firebase URL'ini girin</div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="firebase-url-input" placeholder="https://proje-adı-default-rtdb.firebaseio.com"
-          style="flex:1;background:#1a1a2e;border:1px solid #334155;color:#f8fafc;padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
-        <button class="btn btn-onayla" style="flex:none;padding:8px 14px;font-size:12px" onclick="firebaseKaydet()">Bağla</button>
-      </div>
-      <div id="firebase-durum" style="font-size:11px;margin-top:6px;color:#94a3b8;"></div>
-    </div>
-
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460; text-align:center;">
-      <div style="font-size:13px;color:#f97316;margin-bottom:8px;font-weight:bold;">📱 Müşteri QR Menü Sistemi</div>
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Müşterilerinizin kendi masalarından menüyü okutabilmesi için ücretsiz QR kodunuzu oluşturun.</div>
-      <button class="btn btn-mavi" style="width:100%;padding:10px;font-size:13px;" onclick="qrKodOlustur()">Müşteri QR Kodunu Oluştur</button>
-    </div>
-
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #0f3460; text-align:center;">
-      <div style="font-size:13px;color:#f97316;margin-bottom:8px;font-weight:bold;">💾 Netlify Yedekleme (Dosyaya Kaydet)</div>
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Tüm yeni resimlerinizi ve menünüzü index.html dosyasına kalıcı gömer.</div>
-      <button class="btn btn-onayla" id="btn-kalici-kaydet" style="width:100%;padding:10px;font-size:13px;background-color:#22c55e;border-color:#16a34a;" onclick="kaliciKodaKaydet()">🚀 Mevcut Menüyü Dosyaya Kalıcı Yaz</button>
-    </div>
-
-    <button class="btn btn-iptal" style="width:100%;margin-top:14px" onclick="garsonModalKapat()">Kapat</button>
-  </div>
-</div>
-
-<!-- MASA YÖNETİM MODAL -->
-<div class="modal-overlay" id="masa-yonetim-modal">
-  <div class="modal" style="max-width:480px">
-    <h2>⚙️ Masa Yönetimi</h2>
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Dolu masalar silinemez. Yeni masa en sona eklenir.</div>
-    <div id="masa-yonetim-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:16px;max-height:340px;overflow-y:auto;"></div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-onayla" style="flex:1" onclick="masaEkle()">➕ Masa Ekle</button>
-      <button class="btn btn-iptal" style="flex:none;padding:9px 18px" onclick="masaYonetimKapat()">Kapat</button>
-    </div>
-  </div>
-</div>
-
-<!-- ÖDEME MODAL -->
-<div class="modal-overlay" id="odeme-modal">
-  <div class="modal">
-    <h2>💳 Ödeme Al</h2>
-    <div id="odeme-masa-adi" style="text-align:center;color:#94a3b8;margin-bottom:10px;font-size:13px;"></div>
-
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Ürün ismine tıklayarak seçin, + / − ile adet ayarlayın:</div>
-    <button class="tumu-sec-btn" style="width:100%;margin-bottom:10px;padding:10px 16px;font-size:15px;font-weight:bold;background:#f97316;color:#ffffff;border:none;border-radius:8px;box-shadow:0 4px 10px rgba(249,115,22,0.4);white-space:nowrap;box-sizing:border-box;" onclick="tumuSec()">☑️ Tümünü Seç</button>
-    <div class="odeme-urun-listesi" id="odeme-urun-listesi"></div>
-
-    <div class="odeme-secim-toplam" id="odeme-toplam">0₺</div>
-    <div class="odeme-secim-info" id="odeme-info"></div>
-
-    <div style="margin-top:15px; margin-bottom:15px; border-top:1px solid #334155; padding-top:15px; display:flex; flex-direction:column; gap:8px;">
-      <div style="font-size:12px;color:#f97316;font-weight:bold;">Veya Tutar Girerek Parçalı Ödeme Alın (Tuşlamalı):</div>
-      <input type="number" id="odeme-tutar-input" class="arama-kutu" style="font-size:16px; padding:10px; width:100%; box-sizing:border-box;" placeholder="Örn: 500">
-      <div class="odeme-yontemleri" style="margin-top:0;">
-        <button class="odeme-btn" style="background:#0f172a; border: 1px solid #10b981; color:#10b981;" onclick="tutarlaOdemeAl('nakit')">💵 Tutar Nakit Al</button>
-        <button class="odeme-btn" style="background:#0f172a; border: 1px solid #3b82f6; color:#3b82f6;" onclick="tutarlaOdemeAl('kart')">💳 Tutar Kart Al</button>
-      </div>
-    </div>
-
-    <div class="odeme-yontemleri">
-      <button class="odeme-btn secili" onclick="odemeYontemSec(this,'nakit')">💵 Seçilenleri Nakit</button>
-      <button class="odeme-btn" onclick="odemeYontemSec(this,'kart')">💳 Seçilenleri Kart</button>
-    </div>
-    <div class="modal-butonlar">
-      <button class="btn btn-iptal" onclick="modalKapat()">İptal</button>
-    </div>
-  </div>
-</div>
-
-<!-- İNDİRİM MODAL -->
-<div class="indirim-overlay" id="indirim-overlay">
-  <div class="indirim-modal">
-    <h3>🏷️ İndirim Uygula</h3>
-    <div class="indirim-kisayollar">
-      <button class="indirim-kisayol" onclick="indirimYuzdeHesapla(10)">%10</button>
-      <button class="indirim-kisayol" onclick="indirimYuzdeHesapla(20)">%20</button>
-      <button class="indirim-kisayol" onclick="indirimYuzdeHesapla(50)">%50</button>
-      <button class="indirim-kisayol" onclick="indirimKisayol(50)">50₺</button>
-      <button class="indirim-kisayol" onclick="indirimKisayol(100)">100₺</button>
-    </div>
-    <input class="indirim-input" type="number" id="indirim-input" placeholder="0" min="0" oninput="indirimGuncelle()">
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;" id="indirim-aciklama"></div>
-    <div class="indirim-butonlar">
-      <button class="btn btn-iptal" onclick="indirimKapat()">İptal</button>
-      <button class="btn btn-indirim" onclick="indirimUygula()">Uygula</button>
-    </div>
-  </div>
-</div>
-
-<div class="bildirim" id="bildirim"></div>
-
-<script>
   // ============ VERİ ============
   const menu = {
   "TATLILAR": [
@@ -1674,18 +968,8 @@
           ${indirim > 0 ? `<div class="toplam-satir" style="color:#ef4444;font-size:12px;"><span>İndirim</span><span>-${indirim}₺</span></div>
           <div class="toplam-satir"><span class="toplam-label" style="font-weight:bold;">Net Toplam</span><span class="toplam-deger" style="color:#22c55e;">${Math.max(0,toplam-indirim)}₺</span></div>` : ''}
           
-          ${(function() {
-            let degisiklikVarMi = false;
-            if (window._seciliMasaYedekAdisyon) {
-               degisiklikVarMi = JSON.stringify(masa.adisyon) !== JSON.stringify(window._seciliMasaYedekAdisyon);
-            } else {
-               degisiklikVarMi = masa.adisyon.length > 0;
-            }
-            if (degisiklikVarMi) {
-              return `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: ${gonderilecekVarMi ? '#f39c12' : '#27ae60'}; border: 1px solid ${gonderilecekVarMi ? '#d68910' : '#2ecc71'}; color: white; padding: 12px; font-size: 14px;" onclick="${gonderilecekVarMi ? 'siparisiGonder()' : 'siparisiKaydet()'}">${gonderilecekVarMi ? '🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet' : '💾 Değişiklikleri Kaydet'}</button>`;
-            }
-            return '';
-          })()}
+          ${gonderilecekVarMi ? `<button class="btn btn-onayla" style="width:100%; margin-bottom: 8px; border-radius: 8px; font-weight: bold; background-color: #f39c12; border: 1px solid #d68910; color: white; padding: 12px; font-size: 14px;" onclick="siparisiGonder()">🚀 Yeni Eklenenleri Yazdır & Masayı Kaydet</button>` : ''}
+          
           <div class="butonlar">
             ${(!yoneticiModu && !garsonIzinler.odemeAl) ? '' : `<button class="btn btn-kapat" onclick="odemeAc()">Ödeme Al</button>`}
           </div>
@@ -2070,22 +1354,7 @@
 
   function panelKapat() { 
     if (seciliMasa && window._seciliMasaYedekAdisyon) {
-        const currentAdisyonStr = JSON.stringify(masalar[seciliMasa].adisyon || []);
-        const yedekAdisyonStr = JSON.stringify(window._seciliMasaYedekAdisyon || []);
-        
-        if (currentAdisyonStr !== yedekAdisyonStr) {
-             if (confirm("Masada KAYDEDİLMEMİŞ değişiklikler var. Değişiklikler kaydedilsin mi?\n\nTamam = Kaydet\nİptal = Eski Haline Döndür")) {
-                 const gonderilecekVarMi = masalar[seciliMasa].adisyon.some(u => u.adet > (u.yazdirilanAdet || 0));
-                 if (gonderilecekVarMi) {
-                     siparisiGonder();
-                 } else {
-                     siparisiKaydet();
-                 }
-                 return;
-             } else {
-                 masalar[seciliMasa].adisyon = window._seciliMasaYedekAdisyon; // Onaysızsa eski haline çevir
-             }
-        }
+        masalar[seciliMasa].adisyon = window._seciliMasaYedekAdisyon; // Onaysızsa eski haline çevir
     }
     window._seciliMasaYedekAdisyon = null;
     seciliMasa = null; 
@@ -2157,10 +1426,6 @@
         <div class="odeme-secim-info" id="odeme-info" style="flex-shrink:0; padding-bottom:15px;">${kalan > 0 ? `Masada kalan: ${kalan}₺` : 'Tüm ürünler ödenecek'}</div>
       </div>
       <div class="sag-panel-alt">
-        <div style="margin-bottom:10px; border-top:1px solid #334155; padding-top:10px; display:flex; flex-direction:column; gap:6px;">
-          <div style="font-size:11px;color:#f97316;font-weight:bold;">Tutar Girerek Parçalı Ödeme Alın:</div>
-          <input type="number" id="odeme-tutar-input" class="arama-kutu" style="width:100%; font-size:14px; padding:8px; box-sizing:border-box;" placeholder="Miktar yazıp alttan Nakit/Kart seçin">
-        </div>
         <button class="btn btn-indirim" style="width: 100%; margin-bottom: 8px; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 8px;" onclick="indirimAc()">🏷️ İndirim Tanımla</button>
         <div class="odeme-yontemleri" style="margin-bottom:0;">
           <button class="odeme-btn${seciliOdemeYontemi==='nakit'?' secili':''}" onclick="odemeYontemSec(this,'nakit')">💵 Nakit</button>
@@ -2224,12 +1489,6 @@
   }
 
   function odemeYontemSec(el, tip) {
-    const inp = document.getElementById('odeme-tutar-input');
-    if (inp && inp.value.trim() !== '') {
-        tutarlaOdemeAl(tip);
-        return;
-    }
-
     seciliOdemeYontemi = tip;
     document.querySelectorAll('.odeme-btn').forEach(b => b.classList.remove('secili'));
     el.classList.add('secili');
@@ -2295,10 +1554,6 @@
     masa.adisyon.push({ ad: odemeUrunIsim, fiyat: -tutar, adet: 1, isGece: false, kategori: 'Ödeme' });
     
     masalariKaydet();
-    
-    // 🖨️ Fiş yazdır
-    odemeFisiYazdir(masaIsim, [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1, ekstralar: [] }], tutar, 0, tutar, tip);
-
     bildirimGoster(`${tutar}₺ Kısmi Ödeme Alındı (${tip==='nakit'?'Nakit':'Kart'})`, '#22c55e');
     inp.value = '';
     
@@ -2345,7 +1600,7 @@
     const now = new Date();
     const tarih = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const saat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    kayitEkle({ tarih, saat, masaNo: seciliMasa, masaIsim, urunler: seciliUrunler, odenenToplam, indirim: indirimTutar, tamToplam, odemeYontemi: seciliOdemeYontemi, acilisZamani: masa.acilisZamani, kapanisZamani: now.getTime(), hepsiOdeniyor });
+    kayitEkle({ tarih, saat, masaNo: seciliMasa, masaIsim, urunler: seciliUrunler, odenenToplam, indirim: indirimTutar, tamToplam, odemeYontemi: seciliOdemeYontemi });
 
     // Masayı güncelle
     masalar[seciliMasa].adisyon = kalanUrunler;
@@ -2365,7 +1620,6 @@
       odemeAdetler = masalar[seciliMasa].adisyon.map(() => 0);
       _odemeRender();
     } else {
-      window._seciliMasaYedekAdisyon = null;
       modalKapat();
       panelKapat();
     }
@@ -2505,27 +1759,8 @@
       raporRender();
   };
 
-  function raporRender(isTumuGoster = false) {
-    if (isTumuGoster !== true) window._raporTumuGoster = false;
-    else window._raporTumuGoster = true;
-
-    const icerik = document.getElementById('rapor-icerik');
-    if (icerik) {
-        icerik.innerHTML = `<div style="padding:60px 20px;text-align:center;color:#94a3b8;font-size:16px;">
-          <div style="font-size:32px; animation: spin 1s linear infinite; display:inline-block; margin-bottom:16px;">⏳</div>
-          <div>Veriler Derleniyor... Lütfen Bekleyin.</div>
-          <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
-        </div>`;
-    }
-    
-    // UI'ın çizilmesi için çok kısa bir süre bekle ve ağır işlemi çalıştır
-    setTimeout(_raporRenderAsil, 50);
-  }
-
-  function _raporRenderAsil() {
-    const donemEl = document.getElementById('rapor-donem');
-    if (!donemEl) return;
-    const donem = donemEl.value;
+  function raporRender() {
+    const donem = document.getElementById('rapor-donem').value;
     const aramaKelime = (document.getElementById('urun-ara').value || '').toLowerCase();
     const kayitlar = kayitlariAl();
     const bugun = bugunTarih();
@@ -2715,68 +1950,6 @@
         </table>
       `;
 
-    // Gece Ürünleri Tablosu
-    const geceUrunIstatistik = {};
-    filtreli.forEach(k => {
-      const iskontoluOran = (k.toplam > 0) ? (k.odenenToplam / k.toplam) : 1;
-      (k.urunler || []).forEach(u => {
-        if (u.isGece) {
-          let isTatli = false;
-          if (u.kategori) {
-            isTatli = u.kategori.toLowerCase().includes('tatl');
-          } else if (typeof menu !== 'undefined') {
-            const tatliKatlari = Object.keys(menu).filter(key => key.toLowerCase().includes('tatl'));
-            for (let kat of tatliKatlari) {
-              if (menu[kat] && menu[kat].some(t => t.ad === u.ad)) isTatli = true;
-            }
-          }
-          if (!isTatli) {
-            if (!geceUrunIstatistik[u.ad]) geceUrunIstatistik[u.ad] = {ad:u.ad, adet:0, ciro:0};
-            geceUrunIstatistik[u.ad].adet += u.adet;
-            const bFiyat = u.fiyat + (u.ekstralar||[]).reduce((ms,e)=>ms+e.fiyat, 0);
-            geceUrunIstatistik[u.ad].ciro += (bFiyat * (u.adet || 1)) * iskontoluOran;
-          }
-        }
-      });
-    });
-    let geceUrunSirali = Object.values(geceUrunIstatistik)
-      .filter(u => !aramaKelime || u.ad.toLowerCase().includes(aramaKelime))
-      .sort((a, b) => b.adet - a.adet);
-      
-    geceUrunSirali.forEach(u => u.ciro = Math.round(u.ciro));
-    const maxGeceAdet = geceUrunSirali.length > 0 ? geceUrunSirali[0].adet : 1;
-
-    const geceTabloHtml = geceUrunSirali.length === 0
-      ? ''
-      : `
-        <div class="rapor-tablo-baslik" style="margin-top:24px; color:#8b5cf6;">Gece (00:00-08:00) Satılan Ürünler</div>
-        <table class="rapor-tablo">
-          <thead>
-            <tr>
-              <th style="color:#8b5cf6;">#</th>
-              <th style="color:#8b5cf6;">Ürün</th>
-              <th style="color:#8b5cf6;">Adet</th>
-              <th style="color:#8b5cf6;">Ciro</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${geceUrunSirali.map((u, i) => `
-              <tr>
-                <td class="sira" style="color:#8b5cf6;">${i+1}</td>
-                <td>
-                  <div class="urun-cizgi">
-                    <div class="bar" style="background:#8b5cf6; width:${Math.round((u.adet/maxGeceAdet)*80)+4}px"></div>
-                    ${u.ad}
-                  </div>
-                </td>
-                <td>${u.adet} adet</td>
-                <td>${u.ciro}₺</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
     // Günlük Ciro Tablosu
     const gunlukCiroObj = {};
     filtreli.forEach(k => {
@@ -2845,18 +2018,13 @@
       
       const iptalFiltreli = iptaller.filter(k => tarihUyuyorMu(k.tarih, donem, bugun)).reverse();
 
-      const renderLimit = window._raporTumuGoster ? 999999 : 50;
-      const renderList = iptalFiltreli.slice(0, renderLimit);
-      const limitBtnHtml = (!window._raporTumuGoster && iptalFiltreli.length > 50) ? 
-        `<div style="text-align:center; padding-top:14px;"><button onclick="raporRender(true)" class="btn-mavi" style="width:100%; padding:14px; font-size:15px; background:#1e293b; color:#ef4444; border:1px solid #ef4444; cursor:pointer; border-radius:6px;">Tümünü Göster (${iptalFiltreli.length} işlem)</button></div>` : '';
-
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
               <div class="rapor-tablo-baslik" style="margin:0;">İptal/Silinen Logları</div>
               ${selectHtml}
           </div>
-          ${renderList.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde iptal kaydı yok</div>' : renderList.map(k => `
+          ${iptalFiltreli.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde iptal kaydı yok</div>' : iptalFiltreli.map(k => `
             <div class="islem-item" style="border-left: 4px solid #ef4444;">
               <div class="islem-baslik">
                 <span class="masa-isim" style="color:#ef4444;">${k.masaIsim}</span>
@@ -2865,7 +2033,6 @@
               <div class="islem-urunler" style="color:#fca5a5;">🗑️ ${k.urunAd} x${k.miktar} ürün masadan çıkarıldı</div>
             </div>
           `).join('')}
-          ${limitBtnHtml}
         </div>
       `;
     } else {
@@ -2878,36 +2045,27 @@
           islemSirali = islemSirali.filter(k => (k.indirim || 0) > 0).sort((a,b) => (b.indirim||0) - (a.indirim||0));
       }
 
-      const renderLimit = window._raporTumuGoster ? 999999 : 50;
-      const renderList = islemSirali.slice(0, renderLimit);
-      const limitBtnHtml = (!window._raporTumuGoster && islemSirali.length > 50) ? 
-        `<div style="text-align:center; padding-top:14px;"><button onclick="raporRender(true)" class="btn-mavi" style="width:100%; padding:14px; font-size:15px; background:#1e293b; color:#38bdf8; border:1px solid #38bdf8; cursor:pointer; border-radius:6px;">Tüm İşlemleri Göster (${islemSirali.length} işlem)</button></div>` : '';
-
       islemHtml = `
         <div class="islem-listesi" style="margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; flex-wrap:wrap; gap:10px;">
               <div class="rapor-tablo-baslik" style="margin:0;">Kapanan Tüm Adisyonlar</div>
               ${selectHtml}
           </div>
-          ${renderList.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : renderList.map(k => `
+          ${islemSirali.length === 0 ? '<div class="rapor-bos">📭 Bu dönemde kapanan adisyon yok</div>' : islemSirali.map(k => `
             <div class="islem-item">
               <div class="islem-baslik">
                 <span class="masa-isim">${k.masaIsim || (typeof masalar !== 'undefined' && masalar[k.masaNo] && masalar[k.masaNo].isim ? masalar[k.masaNo].isim : (k.masaNo === 'Paket' ? 'Paket' : 'Masa ' + k.masaNo))} ${k.indirim ? '<span style="font-size:10px;color:#db2777;border:1px solid #db2777;padding:1px 4px;border-radius:4px;margin-left:4px;">İndirim '+k.indirim+'₺</span>' : ''}</span>
-                <span class="islem-tarih" style="text-align:center;">
-                  ${k.tarih} ${k.saat} · ${k.odemeYontemi==='nakit'?'💵 Nakit':'💳 Kart'}
-                  ${k.acilisZamani && k.kapanisZamani && k.hepsiOdeniyor !== false ? `<br><span style="color:#eab308;font-size:11px;">⏳ ${new Date(k.acilisZamani).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})} - ${k.saat} (${Math.floor((k.kapanisZamani - k.acilisZamani)/60000/60) > 0 ? Math.floor((k.kapanisZamani - k.acilisZamani)/60000/60) + ' saat ' : ''}${Math.floor((k.kapanisZamani - k.acilisZamani)/60000)%60} dk açık kaldı)</span>` : ''}
-                </span>
+                <span class="islem-tarih">${k.tarih} ${k.saat} · ${k.odemeYontemi==='nakit'?'💵 Nakit':'💳 Kart'}</span>
                 <span class="islem-tutar" style="font-size:16px;">${k.odenenToplam}₺</span>
               </div>
               <div class="islem-urunler">${(k.urunler||[]).map(u => `${u.ad} x${u.adet}`).join(', ')}</div>
             </div>
           `).join('')}
-          ${limitBtnHtml}
         </div>
       `;
     }
 
-    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + geceTabloHtml + gunlukOzetHtml + islemHtml;
+    document.getElementById('rapor-icerik').innerHTML = ozetHtml + tabloHtml + gunlukOzetHtml + islemHtml;
   }
 
 
@@ -4392,80 +3550,3 @@
 
   // Uygulama yüklendiğinde şifre ekranını Firebase üzerinden kontrol et
   cihazOnayKontrol();
-</script>
-
-<!-- ============ OFFLINE OVERLAY ============ -->
-<style>
-  #offline-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.95);
-    z-index: 999999;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-    backdrop-filter: blur(8px);
-    transition: opacity 0.5s ease;
-  }
-  #offline-overlay.active {
-    display: flex;
-  }
-  #offline-overlay h1 {
-    color: #ef4444;
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-  }
-  #offline-overlay p {
-    color: #94a3b8;
-    font-size: 1.2rem;
-    max-width: 600px;
-  }
-  .spinner {
-    width: 60px; height: 60px;
-    border: 6px solid #334155;
-    border-top: 6px solid #ef4444;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-top: 30px;
-  }
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>
-<div id='offline-overlay'>
-  <div style='font-size: 5rem; margin-bottom: 20px;'>📡❓</div>
-  <h1>İnternet Bağlantısı Koptu!</h1>
-  <p>Veri kaybını önlemek için sistem geçici olarak durduruldu.<br>Lütfen internet bağlantınızın gelmesini bekleyin. Bağlantı geldiğinde sistem otomatik olarak aktifleşecektir.<br><br><strong style="color: #f87171; font-size: 1.8rem; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 8px; display: inline-block; border: 2px solid #ef4444;">🚨 BURADA İNTERNET YOK, TELEFONUNDAN GİR!</strong></p>
-  
-  <div style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 12px; max-width: 600px; text-align: left; border-left: 5px solid #d97706; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="color: #fbbf24; margin-bottom: 10px; font-size: 1.2rem;">☕ İşte Sana İlginç Bilgi</h3>
-    <p style="font-size: 1rem; color: #e2e8f0; line-height: 1.4; max-width: 100%;">
-      <strong>Espresso'nun "Sanayi Devrimi" ile Doğuşu:</strong> Espresso makinesinin icadı tamamen patronların işçileri daha hızlı çalıştırma isteğinden doğmuştur. 19. yüzyılın sonlarında İtalya'da fabrikalar hızla büyürken, işçilerin kahve demlenmesini beklemesi zaman kaybı olarak görülüyordu. Suyu çok yüksek basınçla kahveden "hızlıca" (express) geçiren makineler icat edildi. Yani o havalı espresso, aslında işçilerin molalarını kısaltmak için icat edilen "hızlı" bir kahvedir. <br><br><span style="color: #ef4444; font-weight: bold; font-size: 1.3rem;">ÇALIŞŞŞŞŞŞŞŞŞŞŞŞŞŞ</span>
-    </p>
-  </div>
-  <div class='spinner'></div>
-</div>
-<script>
-  (function() {
-    function updateOfflineStatus() {
-      const overlay = document.getElementById('offline-overlay');
-      if (navigator.onLine) {
-        overlay.classList.remove('active');
-      } else {
-        overlay.classList.add('active');
-        if (document.activeElement) {
-          document.activeElement.blur();
-        }
-      }
-    }
-    window.addEventListener('online', updateOfflineStatus);
-    window.addEventListener('offline', updateOfflineStatus);
-    if (!navigator.onLine) {
-      updateOfflineStatus();
-    }
-    setInterval(updateOfflineStatus, 2000);
-  })();
-</script>
-</body>
-</html>
