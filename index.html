@@ -448,7 +448,7 @@
       </div>
       <div class="butonlar" style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
         <button class="btn btn-onayla" style="padding:12px; font-size:14px; font-weight:bold; background-color:#f39c12; color:white; border:none; border-radius:8px;" onclick="hizliSiparisiYazdir()">🚀 Mutfağa Yazdır</button>
-        <button class="btn btn-kapat" onclick="hizliOdemeAc()">💳 Ödeme Al</button>
+        <button class="btn btn-kapat" id="btn-hizli-odeme" onclick="hizliOdemeAc()" disabled style="opacity:0.5; cursor:not-allowed;">💳 Ödeme Al</button>
       </div>
     </div>
   </div>
@@ -3451,7 +3451,23 @@
   function hizliAdisyonRender() {
     const el = document.getElementById('hizli-adisyon');
     const toplamEl = document.getElementById('hizli-toplam');
+    const odemeBtn = document.getElementById('btn-hizli-odeme');
+    
     if (!el) return;
+    
+    if (odemeBtn) {
+      const basilanYokMu = hizliAdisyon.length === 0 || hizliAdisyon.some(u => (u.adet - (u.yazdirilanAdet || 0)) > 0);
+      if (basilanYokMu) {
+        odemeBtn.disabled = true;
+        odemeBtn.style.opacity = '0.5';
+        odemeBtn.style.cursor = 'not-allowed';
+      } else {
+        odemeBtn.disabled = false;
+        odemeBtn.style.opacity = '1';
+        odemeBtn.style.cursor = 'pointer';
+      }
+    }
+
     if (hizliAdisyon.length === 0) {
       el.innerHTML = '<div class="hizli-bos">Menüden ürün ekleyin</div>';
       if (toplamEl) toplamEl.textContent = '0₺';
