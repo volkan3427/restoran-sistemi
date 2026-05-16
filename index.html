@@ -1357,6 +1357,9 @@
     if(liste.length > 5) liste = liste.slice(0, 5);
     try { localStorage.setItem('localSonMasalar', JSON.stringify(liste)); } catch(e){}
     sonMasalariRender();
+    if (firebaseUrl) {
+       firebaseGonder('v3_sonMasalar', liste);
+    }
   }
 
   function sonMasalariRender() {
@@ -4122,6 +4125,21 @@
                  masaRender();
             }
          }
+      }
+
+      const rSon = await fetch(`${firebaseUrl}/v3_sonMasalar.json?_t=${t}`, { cache: 'no-store' });
+      if (rSon.ok) {
+          let sonData = await rSon.json();
+          if (sonData !== null && !Array.isArray(sonData)) {
+              sonData = Object.values(sonData);
+          }
+          const dataToSave = sonData ? sonData : [];
+          const strSon = JSON.stringify(dataToSave);
+          const strLocal = localStorage.getItem('localSonMasalar') || "[]";
+          if (strSon !== strLocal) {
+              try { localStorage.setItem('localSonMasalar', strSon); } catch(e){}
+              sonMasalariRender();
+          }
       }
 
       const r = await fetch(`${firebaseUrl}/v3_ortak_masalar.json?_t=${t}`, { cache: 'no-store' });
