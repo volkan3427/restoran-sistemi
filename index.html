@@ -1315,6 +1315,7 @@
 
   async function kayitEkle(kayit) {
     const islemId = Date.now() + "_" + Math.floor(Math.random()*1000);
+    kayit.islemId = islemId;
     
     // Yöneticiler önce güncel ciroyu çeker
     if (isAdmin || yoneticiModu) {
@@ -1329,7 +1330,12 @@
 
     // Firebase'e güvenli ID ile ekle (EZMEDEN)
     if (firebaseUrl) {
-       firebaseGonder('v3_bugunKayitlar/' + islemId, kayit);
+       window._islemGonderiliyor = (window._islemGonderiliyor || 0) + 1;
+       try {
+           await firebaseGonder('v3_bugunKayitlar/' + islemId, kayit);
+       } finally {
+           window._islemGonderiliyor--;
+       }
     }
     
     // Ciro widget'ı için tetikle
@@ -1426,6 +1432,7 @@
   let _senkronizePromise = null;
   async function ciroSenkronizeEt() {
       if (!firebaseUrl) return;
+      if (window._islemGonderiliyor > 0) return; // Veri gönderilirken senkronizasyon yapıp lokal veriyi ezmeyi engelle
       if (_senkronizePromise) return _senkronizePromise;
 
       _senkronizePromise = (async () => {
