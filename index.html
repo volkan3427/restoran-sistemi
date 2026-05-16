@@ -414,6 +414,10 @@
   <div class="masa-bolumu">
     <h2>Masalar</h2>
     <div class="masa-grid" id="masa-grid"></div>
+    <div id="son-masalar-container" style="margin-top: 30px; padding: 15px; background: #1e293b; border-radius: 10px; border: 1px solid #334155;">
+      <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px; color: #94a3b8;">🕒 Kapatılan Son 5 Masa</h3>
+      <div id="son-masalar-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+    </div>
   </div>
   <div class="siparis-panel" id="siparis-panel">
     <div id="panel-icerik">
@@ -673,6 +677,7 @@
     </div>
 
     <div class="odeme-yontemleri">
+      <button class="btn btn-mavi" style="grid-column: 1 / -1; padding: 10px; font-size: 14px; font-weight: bold; background: #64748b; border: none; color: #fff; border-radius: 8px; margin-bottom: 5px;" onclick="seciliOdemeyiYazdir()">🖨️ Sadece Fiş Yazdır</button>
       <button class="odeme-btn secili" onclick="odemeYontemSec(this,'nakit')">💵 Seçilenleri Nakit</button>
       <button class="odeme-btn" onclick="odemeYontemSec(this,'kart')">💳 Seçilenleri Kart</button>
     </div>
@@ -1323,6 +1328,53 @@
     }
   }
 
+  function localSonMasaEkle(fisTipi, args, gosterimIsim, toplamTutar) {
+    const fis = {
+      fisTipi,
+      args,
+      gosterimIsim,
+      toplamTutar,
+      zaman: new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})
+    };
+    let liste = JSON.parse(localStorage.getItem('localSonMasalar')) || [];
+    liste.unshift(fis);
+    if(liste.length > 5) liste = liste.slice(0, 5);
+    try { localStorage.setItem('localSonMasalar', JSON.stringify(liste)); } catch(e){}
+    sonMasalariRender();
+  }
+
+  function sonMasalariRender() {
+    const container = document.getElementById('son-masalar-list');
+    if (!container) return;
+    const liste = JSON.parse(localStorage.getItem('localSonMasalar')) || [];
+    if (liste.length === 0) {
+      container.innerHTML = '<div style="font-size:12px; color:#64748b; font-style:italic;">Henüz kapatılan masa yok.</div>';
+      return;
+    }
+    
+    container.innerHTML = liste.map((fis, index) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#0f172a; padding:10px; border-radius:6px; border:1px solid #334155;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <strong style="color:#e2e8f0; font-size:14px;">${fis.gosterimIsim}</strong>
+          <span style="color:#94a3b8; font-size:12px;">${fis.zaman} - Toplam: ${fis.toplamTutar}₺</span>
+        </div>
+        <button class="btn btn-mavi" style="padding:6px 12px; font-size:12px; font-weight:bold; background:#3b82f6; border:none; color:#fff; border-radius:6px;" onclick="gecmisFisiYazdir(${index})">🖨️ Yazdır</button>
+      </div>
+    `).join('');
+  }
+
+  function gecmisFisiYazdir(index) {
+    const liste = JSON.parse(localStorage.getItem('localSonMasalar')) || [];
+    const fis = liste[index];
+    if (!fis) return;
+    if (fis.fisTipi === 'paket') {
+      paketFisiYazdir(...fis.args);
+    } else {
+      odemeFisiYazdir(...fis.args);
+    }
+    bildirimGoster('Geçmiş hesap fişi yazdırılıyor.', '#3498db');
+  }
+
   let _sonSatisKontrol = false;
   async function bekleyenSatislariKontrol() {
     if (!firebaseUrl || (!isAdmin && !yoneticiModu)) return;
@@ -1571,6 +1623,7 @@
 
     document.getElementById('bos-say').textContent = `Boş: ${bos}`;
     document.getElementById('dolu-say').textContent = `Dolu: ${dolu}`;
+    sonMasalariRender();
   }
 
   function gecenSure(zaman) {
@@ -2163,6 +2216,7 @@
         </div>
         <button class="btn btn-indirim" style="width: 100%; margin-bottom: 8px; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 8px;" onclick="indirimAc()">🏷️ İndirim Tanımla</button>
         <div class="odeme-yontemleri" style="margin-bottom:0;">
+          <button class="btn btn-mavi" style="grid-column: 1 / -1; padding: 10px; font-size: 14px; font-weight: bold; background: #64748b; border: none; color: #fff; border-radius: 8px; margin-bottom: 5px;" onclick="seciliOdemeyiYazdir()">🖨️ Sadece Fiş Yazdır</button>
           <button class="odeme-btn${seciliOdemeYontemi==='nakit'?' secili':''}" onclick="odemeYontemSec(this,'nakit')">💵 Nakit</button>
           <button class="odeme-btn${seciliOdemeYontemi==='kart'?' secili':''}" onclick="odemeYontemSec(this,'kart')">💳 Kart</button>
         </div>
@@ -2223,6 +2277,43 @@
     }
   }
 
+  function seciliOdemeyiYazdir() {
+    if (window._hizliOdemeModuAktif) {
+        const toplam = hizliAdisyon.reduce((s,u) => s + birimFiyat(u)*u.adet, 0);
+        paketFisiYazdir(hizliAdisyon, toplam, 'Belirtilmedi');
+        bildirimGoster('Hesap fişi yazıcıya gönderildi.', '#3498db');
+        return;
+    }
+
+    const masa = masalar[seciliMasa];
+    if (!masa || !masa.adisyon || masa.adisyon.length === 0) return;
+    const masaIsim = masa.isim || `Masa ${seciliMasa}`;
+    const fisUrunler = [];
+    let seciliToplam = 0;
+    masa.adisyon.forEach((u, i) => {
+      const secAdet = odemeAdetler[i] || 0;
+      if (secAdet > 0) {
+        fisUrunler.push({ad: u.ad, fiyat: birimFiyat(u), adet: secAdet, ekstralar: u.ekstralar || []});
+        seciliToplam += u.fiyat * secAdet;
+      }
+    });
+
+    if (fisUrunler.length === 0) {
+      bildirimGoster('Yazdırılacak ürün seçilmedi!', '#e74c3c');
+      return;
+    }
+
+    const tamToplam = masa.adisyon.reduce((s,u) => s + birimFiyat(u)*u.adet, 0);
+    const hepsiOdeniyor = odemeAdetler.every((a,i) => a === masa.adisyon[i].adet);
+    let indirimTutar = 0;
+    if (hepsiOdeniyor && masa.indirim > 0) indirimTutar = Math.min(masa.indirim, seciliToplam);
+
+    const netToplam = seciliToplam - indirimTutar;
+
+    odemeFisiYazdir(masaIsim, fisUrunler, tamToplam, indirimTutar, netToplam, 'Belirtilmedi');
+    bildirimGoster('Hesap fişi yazıcıya gönderildi.', '#3498db');
+  }
+
   function odemeYontemSec(el, tip) {
     const inp = document.getElementById('odeme-tutar-input');
     if (inp && inp.value.trim() !== '') {
@@ -2252,7 +2343,8 @@
     });
     bildirimGoster(`${toplam}₺ ödeme alındı (${seciliOdemeYontemi==='nakit'?'Nakit':'Kart'})`, '#27ae60');
     // 🖨️ Paket fiş yazdır
-    paketFisiYazdir(hizliAdisyon, toplam, seciliOdemeYontemi);
+    // paketFisiYazdir(hizliAdisyon, toplam, seciliOdemeYontemi);
+    localSonMasaEkle('paket', [hizliAdisyon, toplam, seciliOdemeYontemi], 'Paket/Hızlı Satış', toplam);
     hizliAdisyon = [];
     hizliAdisyonRender();
     masaRender();
@@ -2297,7 +2389,8 @@
     masalariKaydet();
     
     // 🖨️ Fiş yazdır
-    odemeFisiYazdir(masaIsim, [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1, ekstralar: [] }], tutar, 0, tutar, tip);
+    // odemeFisiYazdir(masaIsim, [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1, ekstralar: [] }], tutar, 0, tutar, tip);
+    localSonMasaEkle('masa', [masaIsim, [{ ad: odemeUrunIsim, fiyat: tutar, adet: 1, ekstralar: [] }], tutar, 0, tutar, tip], masaIsim + ' (Kısmi)', tutar);
 
     bildirimGoster(`${tutar}₺ Kısmi Ödeme Alındı (${tip==='nakit'?'Nakit':'Kart'})`, '#22c55e');
     inp.value = '';
@@ -2358,7 +2451,8 @@
     bildirimGoster(`${odenenToplam}₺ ödeme alındı (${seciliOdemeYontemi==='nakit'?'Nakit':'Kart'})`, '#22c55e');
     masaRender();
     // 🖨️ Ödeme fişi yazdır
-    odemeFisiYazdir(masaIsim, fisUrunler, tamToplam, indirimTutar, odenenToplam, seciliOdemeYontemi);
+    // odemeFisiYazdir(masaIsim, fisUrunler, tamToplam, indirimTutar, odenenToplam, seciliOdemeYontemi);
+    localSonMasaEkle('masa', [masaIsim, fisUrunler, tamToplam, indirimTutar, odenenToplam, seciliOdemeYontemi], masaIsim, odenenToplam);
 
     // 6. Kalan ürün varsa ekrandan çıkma, ödeme panelini güncelle
     if (kalanUrunler.length > 0) {
