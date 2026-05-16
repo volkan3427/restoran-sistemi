@@ -1294,7 +1294,7 @@
       const kayitlar = kayitlariAl();
       const bugun = bugunTarih();
       const bugunKayitlar = kayitlar.filter(k => k.tarih === bugun);
-      firebaseGonder('v3_bugunKayitlar', bugunKayitlar);
+      // firebaseGonder('v3_bugunKayitlar', bugunKayitlar); // İPTAL EDİLDİ - Veri ezmesini engellemek için
       const ciro = bugunKayitlar.reduce((s,k) => s + (k.odenenToplam||0), 0);
       firebaseGonder('v3_gunlukCiro', {ciro, tarih: bugun, guncelleme: new Date().toISOString()});
     }
@@ -1314,17 +1314,27 @@
   }
 
   async function kayitEkle(kayit) {
+    const islemId = Date.now() + "_" + Math.floor(Math.random()*1000);
+    
+    // Yöneticiler önce güncel ciroyu çeker
     if (isAdmin || yoneticiModu) {
-      await ciroSenkronizeEt(); // Önce firebase'den taze ciroyu al, dirilme ihtimalini yok et
-      const kayitlar = kayitlariAl();
-      kayitlar.push(kayit);
-      try { localStorage.setItem('restoran_kayitlar', JSON.stringify(kayitlar)); } catch(e) {}
+      await ciroSenkronizeEt();
+    }
+    
+    // Lokale anında ekle
+    const kayitlar = kayitlariAl();
+    kayitlar.push(kayit);
+    try { localStorage.setItem('restoran_kayitlar', JSON.stringify(kayitlar)); } catch(e) {}
+    masaRender();
+
+    // Firebase'e güvenli ID ile ekle (EZMEDEN)
+    if (firebaseUrl) {
+       firebaseGonder('v3_bugunKayitlar/' + islemId, kayit);
+    }
+    
+    // Ciro widget'ı için tetikle
+    if (isAdmin || yoneticiModu) {
       firebaseCiroSync();
-      masaRender(); // Ciro widget'ı geçikmeli guncellenirse yenilensin
-    } else {
-      if (firebaseUrl) {
-         firebaseGonder('v3_bekleyenSatislar/' + Date.now() + Math.floor(Math.random()*1000), kayit);
-      }
     }
   }
 
