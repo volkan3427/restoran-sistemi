@@ -2757,7 +2757,6 @@
         <div class="ozet-kutu" style="background:#8b5cf6; box-shadow:0 2px 8px rgba(139,92,246,0.4);">
           <div class="oz-label">Gece (00:00-08:00)</div>
           <div class="oz-deger">${geceCirosu}₺</div>
-          <div class="oz-alt" style="font-weight:bold;color:#fff;">Arkadaş Payı: ${geceCirosu / 2}₺</div>
         </div>
         <div class="ozet-kutu">
           <div class="oz-label">İşlem Sayısı</div>
@@ -4467,11 +4466,11 @@
        bekleyenSatislariKontrol();
     }
     // Periyodik ciro senkronizasyonu her 10 saniyede bir diğer cihazlardan güncel ciro çeker
-    setInterval(ciroSenkronizeEt, 10000);
+    setInterval(ciroSenkronizeEt, 3000);
     setInterval(() => {
         bekleyenSatislariKontrol();
         if (isAdmin) checkAdminSession();
-    }, 5000);
+    }, 2000);
 
     modYukle();
     modeUygula();
